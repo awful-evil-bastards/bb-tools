@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biceps & Brimstone — Tools</title>
+<style>
+:root{--iron:#1b1512;--iron2:#251d18;--bone:#e6d8bc;--ember:#b8431a;--ember2:#e06a2b;--faint:#8a7a64;--white:#f2ead8}
+*{box-sizing:border-box;margin:0}
+body{background:var(--iron);color:var(--bone);font:16px/1.5 Georgia,serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+h1{font-variant:small-caps;letter-spacing:4px;font-size:34px;color:var(--white);text-align:center}
+h1 em{color:var(--ember2);font-style:normal}
+.sub{color:var(--faint);letter-spacing:2px;text-transform:uppercase;font-size:12px;margin:6px 0 34px;text-align:center}
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;max-width:900px;width:100%}
+a.card{display:block;background:var(--iron2);border:1px solid #3c2f24;border-top:3px solid var(--ember);padding:22px 20px;text-decoration:none;color:var(--bone);transition:border-color .15s, transform .15s}
+a.card:hover{border-color:var(--ember2);transform:translateY(-2px)}
+.glyph{font-size:34px;color:var(--ember2);font-weight:bold}
+.name{font-variant:small-caps;letter-spacing:2px;font-size:19px;color:var(--white);margin:8px 0 6px}
+.desc{font-size:13.5px;color:var(--faint);font-style:italic}
+footer{margin-top:40px;color:#5a4a38;font-size:12px;font-style:italic;text-align:center}
+</style></head><body>
+<h1>Biceps <em>&amp;</em> Brimstone</h1>
+<div class="sub">The Table Tools · install any of them from its own page</div>
+<div class="apps">
+<a class="card" href="bb-charsheet-app/"><div class="glyph">B&amp;B</div><div class="name">Character Sheet</div><div class="desc">Track the hero — HP, Power Dice, skills, gear, and every roll.</div></a>
+<a class="card" href="bb-forge-app/"><div class="glyph">⚒</div><div class="name">Character Forge</div><div class="desc">Guided creation, ancestry to gear — then send them straight to the Sheet.</div></a>
+<a class="card" href="bb-gm-engine-app/"><div class="glyph">⚔</div><div class="name">GM Engine</div><div class="desc">Build the fight, run the initiative, forge adventures and names.</div></a>
+</div>
+<footer>works offline once installed · no accounts, no servers — your data stays on your device</footer>
+</body></html>

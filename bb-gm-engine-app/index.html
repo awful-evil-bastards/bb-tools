@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1512">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brimstone GM Engine — Fight Builder</title>
+<style>
+:root{--iron:#1b1512;--iron2:#251d18;--bone:#e6d8bc;--bone2:#d9c9a6;--ink:#2a2019;--ember:#b8431a;--ember2:#e06a2b;--verd:#6d7d4e;--faint:#8a7a64;--white:#f2ead8;}
+*{box-sizing:border-box;margin:0}
+body{background:var(--iron);color:var(--bone);font:15px/1.45 Georgia,'Times New Roman',serif;padding:14px;max-width:1180px;margin:0 auto}
+h1{font-variant:small-caps;letter-spacing:3px;font-size:26px;color:var(--white)}
+h1 em{color:var(--ember2);font-style:normal}
+.sub{color:var(--faint);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:2px 0 14px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabBtn{background:none;border:1px solid #4a3a2c;color:var(--faint);padding:7px 16px;font:inherit;font-variant:small-caps;letter-spacing:2px;cursor:pointer}
+.tabBtn.on{color:var(--white);border-color:var(--ember);box-shadow:inset 0 -2px 0 var(--ember)}
+.pane{display:none}.pane.on{display:block}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--iron2);border:1px solid #3c2f24;padding:12px}
+.panel h2{font-variant:small-caps;letter-spacing:2px;font-size:15px;color:var(--ember2);border-bottom:1px solid #3c2f24;padding-bottom:6px;margin-bottom:10px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+input,select{background:var(--iron);border:1px solid #4a3a2c;color:var(--bone);font:inherit;padding:5px 8px}
+input[type=text]{flex:1;min-width:120px}
+.card{background:var(--bone);color:var(--ink);padding:8px 10px;margin-bottom:8px;border-left:3px solid var(--ember)}
+.cardTop{display:flex;justify-content:space-between;align-items:baseline}
+.cn{font-weight:bold;font-variant:small-caps;letter-spacing:1px}
+.cx{font-family:ui-monospace,monospace;font-size:12px;color:var(--ember)}
+.cm{font-family:ui-monospace,monospace;font-size:11.5px;color:#5a4a38;margin:2px 0}
+.cnote{font-size:13px;font-style:italic;color:#4a3c2e}
+.cfoot{display:flex;gap:6px;align-items:center;margin-top:5px}
+.tag{font-size:10.5px;font-family:ui-monospace,monospace;background:var(--bone2);padding:1px 7px;color:#6a5540}
+.add{margin-left:auto;background:var(--ember);border:none;color:var(--white);font:inherit;font-size:12px;padding:3px 12px;cursor:pointer}
+.add:hover{background:var(--ember2)}
+#roster{max-height:66vh;overflow-y:auto;padding-right:4px}
+.party{display:flex;gap:18px;align-items:center;margin-bottom:10px;font-variant:small-caps;letter-spacing:1px}
+.party button{background:var(--iron);border:1px solid #4a3a2c;color:var(--bone);width:26px;height:26px;cursor:pointer;font:inherit}
+.gauge{background:#0e0a08;border:1px solid #4a3a2c;height:22px;position:relative;margin:6px 0 2px}
+.gaugeFill{height:100%;width:0;transition:width .25s}
+.g-std{background:linear-gradient(90deg,#5a3016,var(--ember))}
+.g-dead{background:linear-gradient(90deg,var(--ember),var(--ember2),#f4c96a)}
+.g-over{background:linear-gradient(90deg,var(--ember2),#f4c96a,#fff)}
+#heat{position:absolute;right:8px;top:2px;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:2px;color:var(--white);mix-blend-mode:difference}
+.gauge{overflow:hidden}
+#heat{position:absolute}
+.gaugeWrap{position:relative}
+#xpTotal{font-size:22px;font-family:ui-monospace,monospace;color:var(--white)}
+#bands{font-size:11.5px;color:var(--faint);font-family:ui-monospace,monospace;margin-bottom:8px}
+.frow{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dotted #3c2f24;align-items:center}
+.fn{font-variant:small-caps;letter-spacing:1px}
+.fc button{background:var(--iron);border:1px solid #4a3a2c;color:var(--bone);width:22px;cursor:pointer}
+.fx{font-family:ui-monospace,monospace;color:var(--ember2);min-width:44px;text-align:right}
+.warn{background:#2e1a10;border-left:3px solid var(--ember2);padding:5px 9px;font-size:12.5px;margin-top:7px;font-style:italic}
+.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{background:none;border:1px solid var(--ember);color:var(--ember2);font:inherit;font-size:12.5px;padding:5px 12px;cursor:pointer;font-variant:small-caps;letter-spacing:1px}
+.btn:hover{background:var(--ember);color:var(--white)}
+#runsheet{background:#0e0a08;color:#cdbb96;font-family:ui-monospace,monospace;font-size:11.5px;white-space:pre-wrap;padding:10px;margin-top:10px;max-height:34vh;overflow-y:auto;border:1px solid #3c2f24}
+.nm{display:inline-block;background:var(--bone);color:var(--ink);padding:4px 14px;margin:4px;font-variant:small-caps;letter-spacing:1px}
+label.imp{font-size:12px;color:var(--faint)}
+#rollLog{background:#0e0a08;border:1px solid #3c2f24;font-family:ui-monospace,monospace;font-size:12px;padding:6px 10px;margin:8px 0;min-height:30px;color:#cdbb96}
+#rollLog .fresh{color:var(--white)}
+.uatk{background:var(--ember);border:none;color:var(--white);font-size:10.5px;padding:2px 8px;cursor:pointer}
+.uatk:hover{background:var(--ember2)}
+.slot{background:var(--iron2);border:1px solid #3c2f24;border-left:3px solid var(--ember);padding:9px 12px;margin-bottom:9px}
+.heroSlot{border-left-color:var(--verd);background:#1e2318}
+.deadSlot{opacity:.45;border-left-color:#4a3a2c}
+.slTop{display:flex;gap:10px;align-items:baseline}
+.init{font-family:ui-monospace,monospace;background:#0e0a08;border:1px solid #4a3a2c;color:var(--ember2);padding:1px 8px;font-size:13px;min-width:32px;text-align:center}
+.slTag{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);margin-left:auto}
+.slStats{font-family:ui-monospace,monospace;font-size:12px;color:#cdbb96;margin:6px 0 7px}
+.slStats b{color:var(--white);font-size:14px}
+.slBtns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.slBtns .dmg{background:var(--iron);border:1px solid #4a3a2c;color:var(--bone);padding:3px 12px;cursor:pointer;font:inherit;font-size:12px}
+.advBody{font-size:13.5px;line-height:1.6;color:var(--bone);margin-top:6px}
+.advBody b{color:var(--ember2);font-variant:small-caps;letter-spacing:1px}
+footer{margin-top:16px;color:#5a4a38;font-size:11px;text-align:center;font-style:italic}
+
+/* ---- WIDE-SCREEN LAYOUT ---- */
+@media (min-width: 1400px){
+  body{max-width:1680px}
+  #roster{max-height:74vh}
+}
+@media (min-width: 1750px){
+  body{max-width:1960px}
+  .cols{grid-template-columns:1.1fr 1fr}
+  #runList{column-count:2;column-gap:14px}
+  #runList .slot{break-inside:avoid}
+}
+
+</style></head><body>
+<h1>Brimstone <em>GM Engine</em></h1>
+<div class="sub">Fight Builder · Biceps &amp; Brimstone — the fight budget buys composition; composition is the craft</div>
+<div class="tabs">
+<button class="tabBtn on" data-pane="paneFight">The Fight</button>
+<button class="tabBtn" data-pane="paneRun">Run the Fight</button>
+<button class="tabBtn" data-pane="paneAdv">Adventure Forge</button>
+<button class="tabBtn" data-pane="paneNames">Name Forge</button>
+</div>
+<div id="paneFight" class="pane on"><div class="cols">
+<div class="panel"><h2>The Roster</h2>
+<div class="filters"><input type="text" id="search" placeholder="Search the bestiary…"><select id="fRank"></select><select id="fReg"></select></div>
+<div id="roster"></div></div>
+<div class="panel"><h2>Forge a Fight <span style="color:var(--faint);font-size:11px;letter-spacing:1px">— same seed = same fight</span></h2>
+<div class="filters">
+<input type="text" id="seed" placeholder="seed phrase" style="flex:1;min-width:130px">
+<select id="forgeReg"></select>
+<select id="forgeHeat"><option>standard</option><option>deadly</option></select>
+<button class="btn" id="forgeFight">Forge</button>
+</div>
+<h2 style="margin-top:12px">The Fight</h2>
+<div class="party">
+<span>Party <button id="pMinus">−</button> <b id="pVal">4</b> <button id="pPlus">+</button></span>
+<span>Tier <button id="tMinus">−</button> <b id="tVal">T1</b> <button id="tPlus">+</button></span>
+</div>
+<div id="xpTotal">0 XP</div><div id="xpEach" style="font-size:11.5px;color:var(--faint);font-family:ui-monospace,monospace"></div>
+<div class="gaugeWrap"><div class="gauge"><div id="gaugeFill" class="gaugeFill"></div><span id="heat">COLD</span></div></div>
+<div id="bands"></div>
+<div id="fightList"></div>
+<div id="warnings"></div>
+<div class="btnrow">
+<button class="btn" id="copySheet">Copy run-sheet</button>
+<button class="btn" id="export">Export .json</button>
+<label class="imp btn">Import <input type="file" id="import" accept=".json" style="display:none"></label>
+<button class="btn" id="clear">Clear</button>
+</div>
+<pre id="runsheet"></pre>
+</div></div></div>
+<div id="paneRun" class="pane"><div class="panel"><h2>Run the Fight</h2>
+<div class="party">
+<span>Round <b id="roundVal">1</b> <button class="btn" id="nextRound">Next round</button></span>
+<span style="margin-left:auto">Momentum <b id="momVal" style="color:var(--ember2)">+0</b></span>
+<button class="btn" id="resetRun">Re-deal fresh</button> <button class="btn" id="reInit">Re-roll initiative</button>
+</div>
+<div class="warn" id="runHint" style="border-left-color:var(--verd)">The built fight deals out here automatically. Tap ATK to roll a foe’s whole attack; tap damage off as heroes answer; Next Round advances Momentum and refreshes reactions. Re-deal fresh restores everything to full.</div>
+<div class="filters"><button class="btn die" data-s="4">d4</button><button class="btn die" data-s="6">d6</button><button class="btn die" data-s="8">d8</button><button class="btn die" data-s="10">d10</button><button class="btn die" data-s="12">d12</button><button class="btn die" data-s="20">d20</button></div>
+<div id="rollLog"></div>
+<div id="runList"></div>
+</div></div>
+<div id="paneAdv" class="pane"><div class="panel"><h2>Adventure Forge <span style="color:var(--faint);font-size:11px;letter-spacing:1px">— same seed = same adventure</span></h2>
+<div class="filters">
+<input type="text" id="advSeed" placeholder="seed phrase" style="flex:1;min-width:130px">
+<select id="advReg"></select>
+<button class="btn" id="forgeAdv">Forge adventure</button>
+</div>
+<div id="advOut"></div>
+<div class="btnrow" id="advBtns" style="display:none">
+<button class="btn" id="advCopy">Copy adventure</button>
+<button class="btn" id="advToFight">Send boss fight to the Builder</button>
+</div>
+</div></div>
+<div id="paneNames" class="pane"><div class="panel"><h2>Name Forge — by register</h2>
+<div class="filters"><select id="register"></select><button class="btn" id="genNames">Strike names</button></div>
+<div id="nameOut"></div>
+<p style="margin-top:10px;font-size:12px;color:var(--faint);font-style:italic">Registers follow the style guide: real roots, filed serial numbers. Names are raw ore — file to taste, and Erik coins the keepers.</p>
+</div></div>
+<footer>Brimstone GM Engine v1 · the world stays; only the design bends</footer>
+<script>
+const BESTIARY=[
+// Mooks
+{n:"Goblin Warrior",atk:{b:"+2",d:"1d6",w:"spear"},rank:"Mook",hp:5,ac:10,xp:5,tags:[],rx:[],reg:"Anywhere",fac:"Goblins",note:"Fodder; runs in mobs on the shared pool."},
+{n:"Orc Whelp",atk:{b:"+2",d:"1d6",w:"cleaver"},rank:"Mook",hp:5,ac:10,xp:5,tags:[],rx:[],reg:"Anywhere",fac:"Orcs",note:"Bellows-crews; mobs."},
+{n:"Anubrian Thrall",atk:{b:"+2",d:"1d6",w:"tools"},rank:"Mook",hp:5,ac:10,xp:5,tags:[],rx:[],reg:"Anubria",fac:"Anubria",note:"Debt-branded undead labor; mobs."},
+{n:"Beastman Mook",atk:{b:"+2",d:"1d6",w:"claws"},rank:"Mook",hp:5,ac:10,xp:5,tags:[],rx:[],reg:"Wilds",fac:"Beastmen",note:"Answers the Broodcaller's Call."},
+{n:"Magdatha Hatchling",atk:{b:"+2",d:"1d6",w:"bite"},rank:"Mook",hp:5,ac:10,xp:5,tags:[],rx:[],reg:"The Waste",fac:"Magdatha",note:"Pours from brood-tunnels."},
+// Soldiers T1
+{n:"Bandit",atk:{b:"+3",d:"1d6+1",w:"blade or bow"},rank:"Soldier",hp:10,ac:12,xp:20,tags:[],rx:[],reg:"Anywhere",fac:"Men",note:"Wants the purse, not the fight; breaks quickly."},
+{n:"Town Guard",atk:{b:"+3",d:"1d6+1",w:"spear (Reach)"},rank:"Soldier",hp:10,ac:14,xp:20,tags:[],rx:["AoO"],reg:"Anywhere",fac:"Men",note:"Raises the alarm before engaging."},
+{n:"Charlatan",atk:{b:"+2",d:"1d4",w:"knife"},rank:"Soldier",hp:10,ac:11,xp:20,tags:[],rx:[],reg:"Anywhere",fac:"Men",note:"Threat is the crowd he turns."},
+{n:"Canopy Leech",atk:{b:"+5",d:"1d4",w:"drop-attach (adv from above; drains 1d4/rd attached)"},rank:"Soldier",hp:10,ac:10,xp:20,tags:[],rx:[],reg:"Saruk",fac:"Beasts",note:"Drops, attaches, drains 1d4/rd; fire or salt releases."},
+{n:"Milar",atk:{b:"+3",d:"1d6+1",w:"short spear (Reach)"},rank:"Soldier",hp:10,ac:14,xp:20,tags:[],rx:[],reg:"Anubria",fac:"Anubria",note:"Legion recruit; shield-wall +1 AC adjacent."},
+{n:"Carrion-Folk",atk:{b:"+3",d:"1d6+1",w:"claws"},rank:"Soldier",hp:10,ac:11,xp:20,tags:[],rx:[],reg:"The Waste",fac:"Undead",note:"Battlefield ghouls; packs."},
+{n:"Barrow-Dead",atk:{b:"+3",d:"1d6+1",w:"grave-blade"},rank:"Soldier",hp:10,ac:13,xp:20,tags:[],rx:[],reg:"Ordlands",fac:"Undead",note:"Treasure-bound; wake by rank."},
+// Toughs T2
+{n:"Reaver",atk:{b:"+4",d:"1d8+2",w:"axe"},rank:"Tough",hp:15,ac:15,xp:35,tags:[],rx:["Parry"],reg:"Grey Isles",fac:"Men",note:"Hard rank-and-file raider."},
+{n:"Cult Hexer",atk:{b:"+4",d:"1d8",w:"hex bolt (Far)"},rank:"Tough",hp:15,ac:10,xp:35,tags:[],rx:["Evade"],reg:"Anywhere",fac:"Cults",note:"Low AC caster; hide it behind bodies."},
+{n:"Orc Raider",atk:{b:"+5",d:"1d12+3",w:"greataxe (Massive)"},rank:"Tough",hp:15,ac:16,xp:35,tags:[],rx:[],reg:"Anywhere",fac:"Orcs",note:"Grave-iron plate; resist slash/pierce."},
+{n:"Beastman of the Pack",atk:{b:"+5",d:"1d8+3",w:"rending jaws"},rank:"Tough",hp:15,ac:13,xp:35,tags:[],rx:["AoO"],reg:"Wilds",fac:"Beastmen",note:"Must attack packmate's target; survivors save or turn on each other."},
+{n:"Gnoll Tithesman",atk:{b:"+4",d:"1d8+2",w:"hooked flail (drags 10 ft on even)"},rank:"Tough",hp:15,ac:12,xp:35,tags:[],rx:["AoO"],reg:"Wilds",fac:"Gnolls",note:"Fights to capture; drags the downed to the altar."},
+{n:"Red-Palm Strangler",atk:{b:"+5",d:"1d4+3",w:"strangling cord (+clinch DC 13)"},rank:"Tough",hp:15,ac:13,xp:35,tags:[],rx:["Evade"],reg:"Saruk",fac:"Red Palms",note:"Cord + clinch; can't Evade while strangling."},
+{n:"Chitin Lancer",atk:{b:"+4",d:"1d8+2",w:"lance-arm (Reach)"},rank:"Tough",hp:15,ac:15,xp:35,tags:[],rx:[],reg:"Deep Places",fac:"Chitin Court",note:"Resist slash, vulnerable bludgeon; silent, no morale."},
+{n:"Grey Shrike",atk:{b:"+5",d:"1d8+2",w:"blade-arms (pin on crit)"},rank:"Tough",hp:12,ac:14,xp:32,tags:[],rx:["Evade"],reg:"Anubria",fac:"Anubria",note:"Flying blade-drone; sigil-bound, pins on crit."},
+{n:"Obsidian Dverg",atk:{b:"+4",d:"1d8+2",w:"glass-pick (Piercer)"},rank:"Tough",hp:15,ac:15,xp:35,tags:[],rx:[],reg:"Zahg'varuun",fac:"Dverg",note:"Razor-flesh 1d4 to grapplers; vulnerable bludgeon; will parley."},
+{n:"Slaver Captain",atk:{b:"+4",d:"1d4+2",w:"whip (drags 5 ft)"},rank:"Tough",hp:15,ac:14,xp:35,tags:[],rx:["Parry"],reg:"Anywhere",fac:"Men",note:"Takes captives; kills nothing sellable."},
+{n:"Legionary",atk:{b:"+4",d:"1d6+2",w:"spear (Reach)"},rank:"Tough",hp:15,ac:15,xp:35,tags:[],rx:["AoO"],reg:"Anubria",fac:"Anubria",note:"Grey. Shield-wall; the standing line."},
+{n:"Grey Dread Knight",atk:{b:"+4",d:"1d8+2",w:"longsword"},rank:"Tough",hp:15,ac:16,xp:35,tags:[],rx:["Parry"],reg:"Anubria",fac:"Anubria",note:"First oath; fights to the death."},
+{n:"Grey Magus",atk:{b:"+4",d:"1d8",w:"fire bolt (Far)"},rank:"Tough",hp:15,ac:11,xp:35,tags:[],rx:["Evade"],reg:"Anubria",fac:"Anubria",note:"Fire bolt at range."},
+{n:"Magdatha Blade-Coil",atk:{b:"+4",d:"1d6+2",w:"twin sabres"},rank:"Tough",hp:15,ac:13,xp:35,tags:[],rx:[],reg:"The Waste",fac:"Magdatha",note:"Two arms, twin sabres; slither ignores bad ground."},
+{n:"Deodand",atk:{b:"+5",d:"1d8+2",w:"claws"},rank:"Tough",hp:15,ac:13,xp:35,tags:[],rx:["Evade"],reg:"Wilds",fac:"Beasts",note:"Beautiful man-shaped devourer."},
+{n:"Ghul",atk:{b:"+4",d:"1d6+2",w:"grave-bite"},rank:"Tough",hp:15,ac:12,xp:35,tags:[],rx:[],reg:"The Waste",fac:"Undead",note:"Grave-haunter that wears the dead."},
+// Veterans T3
+{n:"Veteran Knight",atk:{b:"+6",d:"1d10+3",w:"longsword"},rank:"Veteran",hp:25,ac:18,xp:55,tags:[],rx:["Parry","Block"],reg:"Westerlands",fac:"Men",note:"Reaction-holder; one per round."},
+{n:"Zingaran Duelist",atk:{b:"+7",d:"1d8+4",w:"rapier"},rank:"Veteran",hp:22,ac:15,xp:52,tags:["Spillover"],rx:["Parry"],reg:"Sun-Coast",fac:"Men",note:"Southron export; margin rides her blade."},
+{n:"Beastman Broodcaller",atk:{b:"+5",d:"1d8+2",w:"gnarled staff"},rank:"Veteran",hp:28,ac:12,xp:58,tags:[],rx:["Evade"],reg:"Wilds",fac:"Beastmen",note:"The Call: 1d4 mooks join as a 20-pool (innate, uncounterable)."},
+{n:"Gnoll Hierophant",atk:{b:"+4",d:"1d6+2",w:"sickle (+Tithe-Chant)"},rank:"Veteran",hp:25,ac:11,xp:55,tags:[],rx:["Evade"],reg:"Wilds",fac:"Gnolls",note:"Tithe-Chant: allies +2 dmg; silence him."},
+{n:"Remnant Warden",atk:{b:"+6",d:"1d10+4",w:"halberd (Reach)"},rank:"Veteran",hp:25,ac:18,xp:55,tags:[],rx:["Parry","AoO"],reg:"Anywhere",fac:"Brass Remnant",note:"Immune fear/Madness; satisfy the order to end the fight."},
+{n:"Gargoyle",atk:{b:"+6",d:"1d10+3",w:"stone talons (adv on first attack)"},rank:"Veteran",hp:25,ac:17,xp:55,tags:[],rx:["Parry"],reg:"Anywhere",fac:"Beasts",note:"Flying; roosts in pairs; vulnerable bludgeon."},
+{n:"Bhaluk",atk:{b:"+6",d:"1d8+4",w:"strangling hands (+2d6 vs isolated)"},rank:"Veteran",hp:28,ac:14,xp:58,tags:[],rx:["AoO"],reg:"Wilds",fac:"Beasts",note:"+2d6 vs isolated (no ally in 30 ft); leaves when wounded, remembers."},
+{n:"Legion Centipede",atk:{b:"+6",d:"1d8+3",w:"venom-bite (Grit DC 14 or slowed)"},rank:"Veteran",hp:30,ac:14,xp:60,tags:[],rx:["Evade"],reg:"Wilds",fac:"Beasts",note:"Splits on any 15+ hit — the anti-Spillover monster."},
+{n:"Red Shrike",atk:{b:"+6",d:"1d8+3 ×2",w:"paired blade-arms"},rank:"Veteran",hp:22,ac:15,xp:52,tags:[],rx:["Evade"],reg:"Anubria",fac:"Anubria",note:"Paired blade-arms ×2; sigil-bound."},
+{n:"Centurion",atk:{b:"+6",d:"1d8+3",w:"spear (Reach; command +1)"},rank:"Veteran",hp:25,ac:16,xp:55,tags:[],rx:["AoO","Parry"],reg:"Anubria",fac:"Anubria",note:"Red. Command: Legion within 30 ft +1 to attacks."},
+{n:"Red Dread Knight",atk:{b:"+6",d:"1d12+3",w:"greatsword (Massive)"},rank:"Veteran",hp:25,ac:17,xp:55,tags:["Spillover"],rx:["Parry"],reg:"Anubria",fac:"Anubria",note:"Second oath; presses when wounded."},
+{n:"Red Magus",atk:{b:"+5",d:"1d8 ×2",w:"twin bolts"},rank:"Veteran",hp:25,ac:12,xp:55,tags:[],rx:["Evade"],reg:"Anubria",fac:"Anubria",note:"Twin bolts; targets the wounded first."},
+{n:"Magdatha War-Dancer",atk:{b:"+6",d:"1d6+3 ×2",w:"four blades"},rank:"Veteran",hp:25,ac:15,xp:55,tags:[],rx:["Parry"],reg:"The Waste",fac:"Magdatha",note:"Four arms; multiattack ×2."},
+{n:"Jackal Priest",atk:{b:"+6",d:"2d6",w:"withering touch (wound won't close)"},rank:"Veteran",hp:25,ac:13,xp:55,tags:[],rx:["Contradiction"],reg:"Anubria",fac:"Anubria",note:"Sermon of the Standing Dead (1/fight); brothers feel his death — 10 min."},
+{n:"Snake Dancer",atk:{b:"+7",d:"1d4+4",w:"venom knives (Grit DC 14 or 2d6)"},rank:"Veteran",hp:22,ac:16,xp:52,tags:[],rx:["Evade"],reg:"Anubria",fac:"Anubria",note:"Dance eats a reaction; boneless — venom answers grapples; stop the music."},
+{n:"Woad-Mad",atk:{b:"+6",d:"1d10+3",w:"woad-axe"},rank:"Veteran",hp:25,ac:13,xp:55,tags:[],rx:[],reg:"Tributaries",fac:"Men",note:"Warp-spasm at half HP (Second Form, minor)."},
+// Elites T4
+{n:"Elite Shinobi",atk:{b:"+7",d:"1d8+4",w:"blade (from smoke)"},rank:"Elite",hp:40,ac:15,xp:80,tags:["Spillover"],rx:["Evade"],reg:"Saruk",fac:"Men",note:"Assassin; strikes from smoke."},
+{n:"Orc Forge-Chief",atk:{b:"+7",d:"1d12+7",w:"maul (Massive, Sunder 19–20)"},rank:"Elite",hp:40,ac:17,xp:80,tags:["Momentum"],rx:["Parry"],reg:"Anywhere",fac:"Orcs",note:"Maul Sunders on 19–20; breaks armor for a living."},
+{n:"Fang-Priest of Uramon",atk:{b:"+6",d:"2d8",w:"the Sire's Grip (pull 15 ft)"},rank:"Elite",hp:40,ac:14,xp:80,tags:["Momentum"],rx:[],reg:"Saruk",fac:"Red Palms",note:"The Sire's Grip pulls 15 ft; Momentum = the god waking."},
+{n:"Gold Shrike",atk:{b:"+7",d:"1d10+4 ×2",w:"blade-arms"},rank:"Elite",hp:35,ac:16,xp:75,tags:[],rx:["Evade","AoO"],reg:"Anubria",fac:"Anubria",note:"Relay: necromancer casts through it."},
+{n:"Praetorian",atk:{b:"+7",d:"1d10+4",w:"spear (Reach)"},rank:"Elite",hp:40,ac:18,xp:80,tags:[],rx:["Block"],reg:"Anubria",fac:"Anubria",note:"Gold. Tower shield Shatters 1/fight to negate; pyramid guard."},
+{n:"Gold Dread Knight",atk:{b:"+7",d:"1d12+4",w:"blessed-then-broken blade (Massive)"},rank:"Elite",hp:40,ac:19,xp:80,tags:[],rx:["Parry","Block"],reg:"Anubria",fac:"Anubria",note:"Third oath; consecration-proof plate."},
+{n:"Gold Magus",atk:{b:"+7",d:"3d6",w:"Conflagration burst (Grit DC 15, half)"},rank:"Elite",hp:40,ac:14,xp:80,tags:["Momentum"],rx:["Evade","Contradiction"],reg:"Anubria",fac:"Anubria",note:"Conflagration bursts; counterspells."},
+{n:"Magdatha Myrmidon",atk:{b:"+7",d:"1d6+4 ×3",w:"wheel of steel"},rank:"Elite",hp:40,ac:16,xp:80,tags:[],rx:["Parry","Parry"],reg:"The Waste",fac:"Magdatha",note:"Eight arms — Parries ×2/round (printed exception)."},
+{n:"Visagist (unhoused)",atk:{b:"+5",d:"—",w:"the Burrow (helpless targets only: death + possession; Resurrection-only)"},rank:"Soldier",hp:10,ac:16,xp:20,tags:[],rx:["Evade"],reg:"The Waste",fac:"The Advent",note:"Scarab demon. THE POSSESSED = any host block +25 XP: full talents/memories, BLEEDS BLACK, scarab evacuates on death (Resolve DC 12/Shaken). Host is already dead — Resurrection only."},
+{n:"Anubrian Necromancer",atk:{b:"+7",d:"2d6+3",w:"lash of the ledger"},rank:"Elite",hp:40,ac:14,xp:80,tags:["Momentum"],rx:["Evade","Contradiction"],reg:"Anubria",fac:"Anubria",note:"The Writ turns thralls on one hero; burn his ledger to free his harvest."},
+{n:"Cliff Ape",atk:{b:"+7",d:"2d8+4",w:"fists"},rank:"Elite",hp:40,ac:14,xp:80,tags:[],rx:[],reg:"Saruk",fac:"Beasts",note:"Almost a person; terribly strong."},
+// Apex T5
+{n:"Dark Samurai",atk:{b:"+8",d:"1d12+5",w:"katana"},rank:"Apex",hp:60,ac:20,xp:110,tags:["Momentum"],rx:["Parry"],reg:"Saruk",fac:"Men",note:"The rival swordmaster."},
+{n:"Primus",atk:{b:"+8",d:"1d10+5",w:"black spear (Reach, Piercer 19–20)"},rank:"Apex",hp:60,ac:19,xp:110,tags:["Spillover"],rx:["Block","AoO"],reg:"Anubria",fac:"Anubria",note:"Obsidian. One per legion; alien-matter spear, Piercer 19–20."},
+{n:"Obsidian Dread Knight",atk:{b:"+8",d:"1d12+5",w:"black-glass greatblade (Massive, Sunder 19–20)"},rank:"Apex",hp:60,ac:20,xp:110,tags:["Momentum"],rx:["Parry"],reg:"Anubria",fac:"Anubria",note:"Final oath; Sunder blade; vulnerable bludgeon — glass at the last."},
+{n:"Obsidian Magus",atk:{b:"AUTO",d:"2d8+3",w:"black lance (auto-hits, 1/round)"},rank:"Apex",hp:60,ac:15,xp:110,tags:["Momentum"],rx:["Evade","Contradiction"],reg:"Anubria",fac:"Anubria",note:"Black lance AUTO-HITS one attack/round — first taste of Greater grammar."},
+{n:"Obsidian Shrike",atk:{b:"+8",d:"1d10+5 ×2",w:"obsidian arms (Sunder 19–20)"},rank:"Apex",hp:55,ac:17,xp:105,tags:["Momentum"],rx:["Evade","AoO"],reg:"Anubria",fac:"Anubria",note:"Alien-matter Sunder arms; the hand is close."},
+{n:"Magdatha Colossal",atk:{b:"+8",d:"1d10+5 ×2",w:"Massive scimitars"},rank:"Apex",hp:60,ac:16,xp:110,tags:["Momentum"],rx:["Parry","Parry"],reg:"The Waste",fac:"Magdatha",note:"Large elder; Massive scimitars ×2."},
+// Greater Foes
+{n:"The Cyclops",atk:{b:"AUTO",d:"2d10+3",w:"club"},rank:"GF",mr:1,hp:70,ac:15,xp:95,tags:[],rx:1,reg:"Anywhere",fac:"Gallery",note:"Entry brute. Die menu in the manuscript."},
+{n:"The Hag",atk:{b:"AUTO",d:"2d6+2",w:"hex"},rank:"GF",mr:1,hp:65,ac:14,xp:90,tags:[],rx:1,reg:"Wilds",fac:"Gallery",note:"Debuffer-caster; entry boss."},
+{n:"Bandit King",atk:{b:"AUTO",d:"2d8+3",w:"axe (+the Word)"},rank:"GF",mr:1,hp:65,ac:15,xp:90,tags:[],rx:1,reg:"Anywhere",fac:"Men",note:"He IS the morale — drop him, everyone checks."},
+{n:"The Larder-Thing",atk:{b:"AUTO",d:"2d8+2",w:"cleaver"},rank:"GF",mr:1,hp:60,ac:13,xp:85,tags:[],rx:1,reg:"Anywhere",fac:"Horrors",note:"Entry horror in a small red room."},
+{n:"The Troll",atk:{b:"AUTO",d:"2d8+3",w:"club (regen 5/rd; fire stops)"},rank:"GF",mr:2,hp:90,ac:15,xp:140,tags:[],rx:2,reg:"Wilds",fac:"Gallery",note:"Regenerates; fire stops it."},
+{n:"Hill Giant Chieftain",atk:{b:"AUTO",d:"2d10+4",w:"boulder or maul"},rank:"GF",mr:2,hp:95,ac:15,xp:145,tags:[],rx:2,reg:"Ordlands",fac:"Gallery",note:"Area control."},
+{n:"Spider Queen",atk:{b:"AUTO",d:"2d6+2",w:"bite (+web, +summons)"},rank:"GF",mr:2,hp:80,ac:16,xp:130,tags:[],rx:2,reg:"Deep Places",fac:"Gallery",note:"Summoner."},
+{n:"Wraith Lord",atk:{b:"AUTO",d:"2d8",w:"chill drain (+fear)"},rank:"GF",mr:2,hp:75,ac:16,xp:125,tags:[],rx:2,reg:"The Waste",fac:"Undead",note:"Fear and drain."},
+{n:"Lich Vorath",atk:{b:"AUTO",d:"2d8",w:"bolt (+Conflagration Grit DC 15)"},rank:"GF",mr:2,hp:80,ac:16,xp:130,tags:["Momentum"],rx:2,reg:"Anywhere",fac:"Undead",note:"Counterspells (the Contradiction); the phylactery is the trick."},
+{n:"The Grave-Tide",atk:{b:"AUTO",d:"2d6+2",w:"engulf (per engaged hero)"},rank:"Horde",mr:2,hp:100,ac:10,xp:150,tags:[],rx:0,reg:"Anubria",fac:"Anubria",note:"Pool 100. Anubrian collection weapon; regains 1d6/rd at 25%."},
+{n:"Ka-Thul",atk:{b:"AUTO",d:"2d8+2",w:"lash of unraveling light (+the Question DC 15)"},rank:"GF",mr:2,hp:90,ac:17,xp:140,tags:["Momentum"],rx:2,reg:"Obiteros",fac:"Marred Altuari",note:"The Question; anchor = one lost round. No third act."},
+{n:"The Headless Ape",atk:{b:"AUTO",d:"2d10+4",w:"boulder-fists → blade 2d12+4 (Second Form)"},rank:"GF",mr:2,hp:80,ac:14,xp:130,tags:[],rx:2,reg:"Saruk",fac:"Beasts",note:"SECOND FORM: stands up without the head; silence the screaming head."},
+{n:"Cast-Down Seraph",atk:{b:"AUTO",d:"2d8+3",w:"spear of remembered light (+Sermon DC 15)"},rank:"GF",mr:2,hp:85,ac:18,xp:135,tags:["Momentum"],rx:2,reg:"Anywhere",fac:"Cast-Down",note:"Burn the prayer-hoard: −1 MR, and it weeps."},
+{n:"The Great Mother",atk:{b:"AUTO",d:"2d10+2",w:"coil-crush (grapples) + eight-blade sweep (Massive)"},rank:"GF",mr:2,hp:110,ac:16,xp:160,tags:[],rx:2,reg:"The Waste",fac:"Magdatha",note:"Massive; brood 1/fight; collapse the tunnels."},
+{n:"Obsidian Legatus",atk:{b:"AUTO",d:"2d8+3",w:"black blade (damage goes to the Levy)"},rank:"GF",mr:2,hp:90,ac:18,xp:140,tags:[],rx:2,reg:"Anubria",fac:"Anubria",note:"THE LEVY: damage goes to his troops' pools until the legion is dead."},
+{n:"The Lich",atk:{b:"AUTO",d:"2d10",w:"bolt + burst (die menu)"},rank:"GF",mr:3,hp:110,ac:18,xp:185,tags:["Momentum"],rx:3,reg:"Anywhere",fac:"Gallery",note:"Full caster."},
+{n:"The Drake",atk:{b:"AUTO",d:"4d6",w:"breath (Grit half) / claws 2d8+3"},rank:"GF",mr:3,hp:105,ac:18,xp:180,tags:[],rx:3,reg:"Zahg'varuun",fac:"Gallery",note:"Mobile breath."},
+{n:"Demon Lord",atk:{b:"AUTO",d:"2d10+4",w:"hellglaive (+summons)"},rank:"GF",mr:3,hp:130,ac:19,xp:205,tags:["Momentum"],rx:3,reg:"Anywhere",fac:"Horrors",note:"Summoner, dimensional."},
+{n:"Young Dragon",atk:{b:"AUTO",d:"2d10+4",w:"claw / breath 5d6 (Grit half)"},rank:"GF",mr:3,hp:160,ac:20,xp:235,tags:["Momentum"],rx:3,reg:"Anywhere",fac:"Dragons",note:"Starter-arc capstone."},
+{n:"Devil Dragon",atk:{b:"AUTO",d:"2d10+4",w:"rending claws / devil-fire 6d6 cone (Grit DC 16 half)"},rank:"GF",mr:3,hp:130,ac:21,xp:205,tags:["Momentum"],rx:3,reg:"Anywhere",fac:"The Advent",note:"Possessed, not ridden. Force the devil out thrice and the dragon is SAVED."},
+{n:"Ancient Dragon",atk:{b:"AUTO",d:"2d12+5",w:"claw / breath 7d6 (Grit half)"},rank:"GF",mr:4,hp:170,ac:22,xp:270,tags:["Momentum"],rx:4,reg:"Anywhere",fac:"Dragons",note:"Age outranks. Always."},
+{n:"The Obsidian Devil",atk:{b:"AUTO",d:"2d12+5",w:"obsidian talons / die menu (DC 18)"},rank:"GF",mr:4,hp:175,ac:21,xp:275,tags:["Momentum"],rx:4,reg:"The Waste",fac:"The Advent",note:"HARDEST IN THE GAME. Bane-gated: cold-iron Brand, sanctified lair, True Name, the rite. Un-Baned: run."}
+];
+const REGISTERS={
+"Thurian (Altuari)":{a:["Ka","Am","Zhur","Thes","Del","Sha","Gon","Ath","Kul","Ra"],b:["-Thul","-Ra","-ala","-cara","-ador","-eth","-ur","-anna","-oth","-is"]},
+"Ordu (steppe-Norse)":{a:["Bor","Tar","Ulf","Khar","Sten","Yur","Grim","Ost","Vald","Ragn"],b:["gan","mund","ek","a","brand","gerd","ulf","var","dis","khan"]},
+"Anubrian":{a:["Seth","Neph","Ankh","Khem","Osir","Ptah","Meren","Ram","Hor","Taa"],b:["-amun","-hotep","-ari","-neb","-ka","-emhat","-set","-irat","-usir","-em"]},
+"Westerlands":{a:["Ald","Ger","Rou","Bel","Marc","Hen","Ysa","God","Clar","Ame"],b:["ric","aume","en","inde","el","frey","bel","win","isse","ot"]},
+"Saruk (Easterling)":{a:["Jin","Kai","Sao","Mei","Ryu","Tan","Hoa","Shen","Iku","Bao"],b:["-wen","-jiro","-lin","-tam","-ko","-yin","-dai","-mura","-lan","-shi"]},
+"Grey Isles":{a:["Hrolf","Sig","Thor","Ket","Ing","Bryn","Ei","Halv","Odd","Sva"],b:["grim","rid","fast","il","olf","hild","nar","dan","run","dr"]},
+"Kithling":{a:["Pip","Wick","Tam","Brill","Sor","Nix","Fen","Dob","Quill","Merry"],b:["kin","le","mble","o","ry","it","wick","bin","et","pot"]},
+"Dverg":{a:["Grum","Baz","Khaz","Dur","Vor","Thrak","Mol","Skar","Grond","Bruni"],b:["dak","gar","rum","in","muth","dek","grim","ovak","dur","bek"]}};
+
+let fight={}; // name -> count
+let P=4, T=1;
+const $=id=>document.getElementById(id);
+const byName=n=>BESTIARY.find(b=>b.n===n);
+const RANKS=["Mook","Soldier","Tough","Veteran","Elite","Apex","GF","Horde"];
+let fRank="All", fReg="All", fQ="";
+
+function budgets(){return {std:30*P*T, dead:50*P*T};}
+function totalXP(){return Object.entries(fight).reduce((s,[n,c])=>s+byName(n).xp*c,0);}
+
+function renderRoster(){
+  const el=$("roster"); el.innerHTML="";
+  BESTIARY.filter(b=>(fRank==="All"||b.rank===fRank||(fRank==="GF"&&b.rank==="Horde"))
+    &&(fReg==="All"||b.reg===fReg||b.reg==="Anywhere")
+    &&(fQ===""||(b.n+b.fac+b.note).toLowerCase().includes(fQ)))
+  .forEach(b=>{
+    const d=document.createElement("div"); d.className="card";
+    const mr=b.mr?` · MR ${b.mr}`:"";
+    d.innerHTML=`<div class="cardTop"><span class="cn">${b.n}</span><span class="cx">${b.xp} XP</span></div>
+    <div class="cm">${b.rank}${mr} · HP ${b.hp} · AC ${b.ac}${b.tags.length?" · "+b.tags.join(", "):""}${Array.isArray(b.rx)&&b.rx.length?" · Rx: "+b.rx.join("/"):(typeof b.rx==="number"&&b.rx?` · Rx ${b.rx}/rd`:"")}</div>
+    <div class="cm" style="color:#7a3416">ATK ${b.atk.b} — ${b.atk.d} ${b.atk.w}</div>
+    <div class="cnote">${b.note}</div>
+    <div class="cfoot"><span class="tag">${b.reg}</span><span class="tag">${b.fac}</span><button class="add" data-n="${b.n}">+ Add</button></div>`;
+    el.appendChild(d);
+  });
+  el.querySelectorAll(".add").forEach(btn=>btn.onclick=()=>{fight[btn.dataset.n]=(fight[btn.dataset.n]||0)+1;renderFight();});
+}
+
+function warnings(){
+  const w=[]; let spill=0, rxHolders=0, gfs=0, entries=Object.entries(fight);
+  entries.forEach(([n,c])=>{const b=byName(n);
+    if(b.tags.includes("Spillover")) spill+=c;
+    if(Array.isArray(b.rx)&&b.rx.length&&b.rank!=="GF") rxHolders+=c;
+    if(b.rank==="GF"||b.rank==="Horde") gfs+=c;});
+  if(spill>1)w.push("⚠ "+spill+" Spillover foes — one duelist is a horror; a room of them is a math lesson.");
+  if(rxHolders>2)w.push("⚠ "+rxHolders+" reaction-holders — one per fight feels sharp; three feels like molasses.");
+  if(gfs>1)w.push("⚠ "+gfs+" Greater Foes — a GF is a centerpiece; two centerpieces is a furniture problem.");
+  const t=totalXP(), b=budgets();
+  if(t>b.dead*1.2)w.push("☠ Well past deadly — this is a massacre or a Bane-gate. Make sure it's on purpose.");
+  return w;
+}
+
+function renderFight(){
+  const el=$("fightList"); el.innerHTML="";
+  Object.entries(fight).forEach(([n,c])=>{
+    const b=byName(n);
+    const d=document.createElement("div"); d.className="frow";
+    d.innerHTML=`<span class="fn">${b.n}</span><span class="fc"><button data-n="${n}" class="dec">−</button> ${c} <button data-n="${n}" class="inc">+</button></span><span class="fx">${b.xp*c}</span>`;
+    el.appendChild(d);
+  });
+  el.querySelectorAll(".inc").forEach(x=>x.onclick=()=>{fight[x.dataset.n]++;renderFight();});
+  el.querySelectorAll(".dec").forEach(x=>x.onclick=()=>{fight[x.dataset.n]--; if(fight[x.dataset.n]<=0)delete fight[x.dataset.n]; renderFight();});
+  const t=totalXP(), b=budgets();
+  $("xpTotal").textContent=t+" XP"; $("xpTotal").title="≈ "+Math.round(t/P)+" XP per hero on a win";
+  $("xpEach").textContent="≈ "+Math.round(t/Math.max(P,1))+" XP each on a win"; $("bands").textContent=`skirmish < ${Math.round(b.std*0.6)} · standard ≈ ${b.std} · deadly ≈ ${b.dead}`;
+  const pct=Math.min(t/(b.dead*1.25)*100,100);
+  const g=$("gaugeFill"); g.style.width=pct+"%";
+  let heat = t===0?"cold": t<b.std*0.6?"warming": t<=b.std*1.15?"forging": t<=b.dead*1.1?"white-hot":"past the forge";
+  g.className="gaugeFill "+(t<=b.std*1.15?"g-std":(t<=b.dead*1.1?"g-dead":"g-over"));
+  $("heat").textContent=heat.toUpperCase();
+  const wl=$("warnings"); wl.innerHTML=warnings().map(w=>`<div class="warn">${w}</div>`).join("");
+  $("runsheet").textContent=runsheet(); runStale=true;
+}
+
+function runsheet(){
+  const b=budgets(); const lines=[`B&B FIGHT — party of ${P}, tier ${T}  (std ${b.std} / deadly ${b.dead})`,`TOTAL: ${totalXP()} XP`,``];
+  Object.entries(fight).forEach(([n,c])=>{const f=byName(n);
+    const rx=Array.isArray(f.rx)?(f.rx.length?f.rx.join("/"):"—"):(f.rx?f.rx+"/rd":"—");
+    lines.push(`${c}× ${f.n} — ${f.rank}${f.mr?" MR"+f.mr:""} · HP ${f.hp} · AC ${f.ac} · ATK ${f.atk.b} ${f.atk.d} ${f.atk.w} · ${f.xp} XP each`);
+    lines.push(`   Tags: ${f.tags.join(", ")||"—"} · Reactions: ${rx}`);
+    lines.push(`   ${f.note}`);});
+  return lines.join("\n");
+}
+
+function names(){
+  const r=REGISTERS[$("register").value];
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const out=[]; for(let i=0;i<8;i++){out.push(pick(r.a)+pick(r.b));}
+  $("nameOut").innerHTML=out.map(n=>`<span class="nm">${n}</span>`).join("");
+}
+
+
+// ---------- RUN THE FIGHT ----------
+let run={units:[],round:1}; let runStale=true;
+function dealRun(){
+  runStale=false;
+  run={units:[],round:1};
+  Object.entries(fight).forEach(([n,c])=>{const b=byName(n);
+    if(b.rank==="Mook"){run.units.push({n:b.n+" mob ×"+c,base:b.n,pool:b.hp*c,max:b.hp*c,mob:true});}
+    else if(b.rank==="Horde"){run.units.push({n:b.n,base:b.n,pool:b.hp,max:b.hp,mob:true,horde:true});}
+    else for(let i=1;i<=c;i++){run.units.push({n:b.n+(c>1?" "+i:""),base:b.n,hp:b.hp,max:b.hp,rx:b.rx,rxMax:Array.isArray(b.rx)?1:(b.rx||0),rxLeft:Array.isArray(b.rx)?1:(b.rx||0),gf:b.rank==="GF"});}});
+  buildSlots();
+  renderRun();
+}
+function buildSlots(){
+  run.slots=[];
+  run.units.forEach((u,ui)=>{
+    const b=byName(u.base); const mr=(b&&b.mr)||0;
+    const nSlots=(u.gf&&mr>=2)?mr:1;
+    for(let s=0;s<nSlots;s++) run.slots.push({ui, init:1+Math.floor(Math.random()*20), sub:nSlots>1?(s+1):0, of:nSlots});
+  });
+  for(let i=1;i<=P;i++) run.slots.push({hero:true,label:"Hero seat "+i,init:1+Math.floor(Math.random()*20)});
+  run.slots.sort((a,b)=>b.init-a.init);
+}
+let rollLog=[];
+function roll(expr){const m=expr.match(/(\d+)d(\d+)([+-]\d+)?/); if(!m)return {total:"?",detail:expr};
+  const n=+m[1],s=+m[2],mod=m[3]?+m[3]:0; let rolls=[]; for(let i=0;i<n;i++)rolls.push(1+Math.floor(Math.random()*s));
+  return {total:rolls.reduce((a,b)=>a+b,0)+mod, detail:rolls.join("+")+(mod?(mod>0?"+":"")+mod:"")};}
+function log(line){rollLog.unshift(line); rollLog=rollLog.slice(0,6); const el=$("rollLog"); if(el)el.innerHTML=rollLog.map((l,i)=>`<div${i===0?' class="fresh"':''}>${l}</div>`).join("");}
+function dRoll(n){const r=1+Math.floor(Math.random()*n);log(`d${n} → <b>${r}</b>`);}
+function unitAttack(u){const b=byName(u.base);
+  if(b.atk.b==="AUTO"){const dm=roll(b.atk.d);log(`${u.n}: <b>AUTO-HIT</b> — ${b.atk.w} — <b>${dm.total}</b> dmg (${dm.detail})`);}
+  else{const hit=1+Math.floor(Math.random()*20); const tot=hit+parseInt(b.atk.b); const dm=roll(b.atk.d);
+    log(`${u.n}: d20 ${hit}${b.atk.b} = <b>${tot}</b> to hit — ${b.atk.w} — <b>${dm.total}</b> dmg (${dm.detail})${hit===20?" — <b>CRIT</b>":hit===1?" — fumble":""}`);}}
+function renderRun(){
+  $("roundVal").textContent=run.round;
+  $("momVal").textContent="+"+(run.round-1);
+  const el=$("runList"); el.innerHTML="";
+  (run.slots||[]).forEach((sl,si)=>{
+    const d=document.createElement("div");
+    if(sl.hero){d.className="slot heroSlot";
+      d.innerHTML=`<div class="slTop"><span class="init">${sl.init}</span><span class="fn">${sl.label}</span><span class="slTag">the player acts</span></div>`;
+      el.appendChild(d); return;}
+    const u=run.units[sl.ui]; const b=byName(u.base);
+    d.className="slot"+((u.mob?u.pool:u.hp)<=0?" deadSlot":"");
+    const sub=sl.of>1?` <span class="slTag">turn ${sl.sub} of ${sl.of}</span>`:"";
+    if(u.mob){
+      const q=u.pool/u.max;
+      const flag=u.pool<=0?"ROUTED / DEAD":(q<=0.25?"25% — last legs":(q<=0.5?"HALF — MORALE CHECK":(q<=0.75?"75%":"full pool")));
+      d.innerHTML=`<div class="slTop"><span class="init">${sl.init}</span><span class="fn">${u.n}</span>${sub}</div>
+      <div class="slStats">POOL <b>${Math.max(u.pool,0)}</b>/${u.max} · ${flag} · ATK ${b.atk.b} ${b.atk.d} ${b.atk.w}</div>
+      <div class="slBtns"><button data-i="${sl.ui}" class="uatk">ATK</button><button data-i="${sl.ui}" data-d="1" class="dmg">−1</button><button data-i="${sl.ui}" data-d="5" class="dmg">−5</button><button data-i="${sl.ui}" data-d="10" class="dmg">−10</button></div>`;
+    } else {
+      const rx=u.rxMax?`Rx ${u.rxLeft}/${u.rxMax}`:"";
+      const bl=u.hp<=0?"DOWN":(u.hp<=u.max/2?"bloodied":"");
+      d.innerHTML=`<div class="slTop"><span class="init">${sl.init}</span><span class="fn">${u.n}${u.gf?" ★":""}</span>${sub}<span class="slTag">${bl}</span></div>
+      <div class="slStats">HP <b>${Math.max(u.hp,0)}</b>/${u.max} · AC ${b.ac} · ATK ${b.atk.b} ${b.atk.d} ${b.atk.w}${b.tags.length?" · "+b.tags.join(", "):""}</div>
+      <div class="slBtns"><button data-i="${sl.ui}" class="uatk">ATK</button><button data-i="${sl.ui}" data-d="1" class="dmg">−1</button><button data-i="${sl.ui}" data-d="5" class="dmg">−5</button><button data-i="${sl.ui}" data-d="10" class="dmg">−10</button>${u.rxMax?`<span class="slTag">${rx}</span>`+(u.rxLeft>0?`<button data-i="${sl.ui}" class="userx">use rx</button>`:""):""}</div>`;
+    }
+    el.appendChild(d);
+  });
+  el.querySelectorAll(".dmg").forEach(x=>x.onclick=()=>{const u=run.units[x.dataset.i];const d=+x.dataset.d; if(u.mob)u.pool-=d; else u.hp-=d; renderRun();});
+  el.querySelectorAll(".userx").forEach(x=>x.onclick=()=>{run.units[x.dataset.i].rxLeft--;renderRun();});
+  el.querySelectorAll(".uatk").forEach(x=>x.onclick=()=>unitAttack(run.units[x.dataset.i]));
+}
+// ---------- FORGE A FIGHT (seeded) ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function hashStr(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return h>>>0;}
+function forgeFight(){
+  const seedS=$("seed").value||("ember-"+Math.floor(Math.random()*99999));
+  $("seed").value=seedS;
+  const rnd=mulberry32(hashStr(seedS));
+  const reg=$("forgeReg").value, heat=$("forgeHeat").value;
+  const b=budgets(); const target=heat==="deadly"?b.dead:b.std;
+  const inReg=x=>reg==="All"||x.reg===reg||x.reg==="Anywhere";
+  const pick=arr=>arr[Math.floor(rnd()*arr.length)];
+  fight={}; let spent=0;
+  // centerpiece: a GF if it fits under 60% of target (deadly leans GF)
+  const gfs=BESTIARY.filter(x=>(x.rank==="GF"||x.rank==="Horde")&&inReg(x)&&x.xp<=target*0.62);
+  if(heat==="deadly"&&gfs.length&&rnd()<0.85){const g=pick(gfs);fight[g.n]=1;spent+=g.xp;}
+  // a soloist or two
+  const solo=BESTIARY.filter(x=>["Veteran","Elite","Apex"].includes(x.rank)&&inReg(x)&&x.xp<=target-spent);
+  let guard=0;
+  while(spent<target*0.8&&solo.length&&guard++<4){const s=pick(solo.filter(x=>x.xp<=target-spent)||solo); if(!s)break; fight[s.n]=(fight[s.n]||0)+1;spent+=s.xp; if(Object.keys(fight).length>=3)break;}
+  // tempo: mooks/soldiers to fill
+  const chaff=BESTIARY.filter(x=>["Mook","Soldier","Tough"].includes(x.rank)&&inReg(x));
+  guard=0;
+  while(spent<target*0.97&&chaff.length&&guard++<30){const c2=chaff.filter(x=>x.xp<=target-spent); if(!c2.length)break; const c=pick(c2); fight[c.n]=(fight[c.n]||0)+1; spent+=c.xp;}
+  renderFight();
+}
+
+
+// ---------- ADVENTURE FORGE ----------
+const ADV={
+ patrons:["a dying soldier with a debt-writ branded on his brow","a Dverg factor whose toll-books stopped balancing","a Jackal Priest who has stopped believing and started running","a river-town charter council, outvoted and desperate","an Ordu khan's daughter riding ahead of her father's pride","a Westerland knight on a crusade nobody sanctioned","a Kithling flotilla-mother missing three boats","a Saruki elder signing too fast to follow, about the floor-dark","a Grey Isles shipmaster who will not say what cargo was lost","a scholar of Obiteros with a map that should not exist"],
+ wants:["recover a thing taken","bring back someone alive — alive is stressed","kill what cannot be reasoned with","escort a burden through hostile country","learn the truth and return with proof","break a siege before the walls do","find the source of the wrong water","buy, steal, or beg a Bane"],
+ lies:["the patron owns the disaster they describe","the 'thing taken' was stolen by the patron first","the rescue target does not want rescuing","the pay is real but the debt it settles is the party's own","the enemy was invited","the map is bait","there were two survivors, not one","the patron is already dead and hasn't mentioned it"],
+ clocks:["a village goes to the harvest bureau, family by family","the pass closes for winter with the wrong people inside","the Sermon takes the town — watch the gold trim appear","the brood-tunnels reach the wellhead","the ledger arrives, and with it the Grave-Tide","the wyrms stop taking the raiders' price","the dig breaks through from the other side","the river's dead stretch grows a mile a week"],
+ scenes:["a guardian that can be fought, bargained with, or fed — it is very old and very bored","ground that is itself the enemy: crossing costs a Recovery or a clever plan","a rival party, better funded, worse intentioned, open to treachery in either direction","a prisoner who knows the layout and lies about exactly one thing","a toll that is not paid in coin","a shrine that answers one question honestly and remembers who asked","the enemy's supply line — burn it, rob it, or follow it home","survivors who need escort back the way the party came, now","a locked thing the key-holder died holding, three rooms from here","evidence the patron lied (see: the lie) — found before the boss, if the party looks"],
+ twists:["the monster is the victim; the victim is the monster","Anubria arrives mid-climax with a writ for the same prize","the treasure is obsidian — and someone must decide who carries it","the rival got there first and needs rescuing from success","the patron's lie comes due at the worst table-moment","what was stolen wants to stay stolen","the boss offers the party the patron's price, doubled, to walk away","killing the boss starts the clock instead of stopping it"],
+ rewards:["Dverg-forged plate with a toll-stamp someone will recognize","a Bane — wrapped, labeled, and meant for something still alive","a harvest-writ with a name on it the party knows","a map that goes DOWN","the patron's true payment: a favor from someone terrifying","salvage worth a heavy purse, and a survivor worth more","an exotic tongue's primer, bloodstained","the boss's weapon, which is worth more broken"]};
+function forgeAdventure(){
+  const seedS=$("advSeed").value||("waste-"+Math.floor(Math.random()*99999));
+  $("advSeed").value=seedS;
+  const rnd=mulberry32(hashStr("adv:"+seedS));
+  const reg=$("advReg").value;
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const inReg=x=>reg==="All"||x.reg===reg||x.reg==="Anywhere";
+  const b=budgets();
+  const bosses=BESTIARY.filter(x=>(x.rank==="GF"||x.rank==="Horde")&&inReg(x)&&x.xp<=b.dead*0.8);
+  const boss=bosses.length?bosses[Math.floor(rnd()*bosses.length)]:BESTIARY.find(x=>x.n==="The Hag");
+  const nScenes=2+Math.floor(rnd()*2);
+  const scenes=[]; const pool=[...ADV.scenes];
+  for(let i=0;i<nScenes;i++){const idx=Math.floor(rnd()*pool.length); scenes.push(pool.splice(idx,1)[0]);}
+  window.lastAdv={boss:boss.n};
+  const html=`<div class="slot">
+  <div class="slTop"><span class="fn" style="font-size:17px">THE HOOK</span><span class="slTag">${reg==="All"?"any region":reg}</span></div>
+  <div class="advBody"><b>Patron:</b> ${pick(ADV.patrons)}.<br><b>The ask:</b> ${pick(ADV.wants)}.<br><b>The lie:</b> ${pick(ADV.lies)}.<br><b>The clock (if the party never shows):</b> ${pick(ADV.clocks)}.</div></div>
+  <div class="slot"><div class="slTop"><span class="fn" style="font-size:17px">THE ROAD & THE SITE</span></div>
+  <div class="advBody">${scenes.map((s,i)=>`<b>Scene ${i+1}:</b> ${s}.`).join("<br>")}</div></div>
+  <div class="slot"><div class="slTop"><span class="fn" style="font-size:17px">THE BOSS</span><span class="slTag">${boss.rank}${boss.mr?" · MR "+boss.mr:""} · ${boss.xp} XP</span></div>
+  <div class="advBody"><b>${boss.n}</b> — HP ${boss.hp} · AC ${boss.ac} · ATK ${boss.atk.b} ${boss.atk.d} ${boss.atk.w}<br><i>${boss.note}</i></div></div>
+  <div class="slot"><div class="slTop"><span class="fn" style="font-size:17px">THE TURN & THE TAKE</span></div>
+  <div class="advBody"><b>Twist:</b> ${pick(ADV.twists)}.<br><b>Reward:</b> ${pick(ADV.rewards)}.</div></div>`;
+  $("advOut").innerHTML=html;
+  $("advBtns").style.display="flex";
+  window.lastAdvText=$("advOut").innerText;
+}
+function init(){
+  const regs=["All",...new Set(BESTIARY.map(b=>b.reg))];
+  $("fReg").innerHTML=regs.map(r=>`<option>${r}</option>`).join("");
+  $("fRank").innerHTML=["All",...RANKS].map(r=>`<option>${r}</option>`).join("");
+  $("fReg").onchange=e=>{fReg=e.target.value;renderRoster();};
+  $("fRank").onchange=e=>{fRank=e.target.value;renderRoster();};
+  $("search").oninput=e=>{fQ=e.target.value.toLowerCase();renderRoster();};
+  $("pMinus").onclick=()=>{P=Math.max(1,P-1);$("pVal").textContent=P;renderFight();};
+  $("pPlus").onclick=()=>{P=Math.min(8,P+1);$("pVal").textContent=P;renderFight();};
+  $("tMinus").onclick=()=>{T=Math.max(1,T-1);$("tVal").textContent="T"+T;renderFight();};
+  $("tPlus").onclick=()=>{T=Math.min(4,T+1);$("tVal").textContent="T"+T;renderFight();};
+  $("clear").onclick=()=>{fight={};renderFight();};
+  $("copySheet").onclick=()=>{navigator.clipboard.writeText(runsheet());$("copySheet").textContent="Copied";setTimeout(()=>$("copySheet").textContent="Copy run-sheet",1200);};
+  $("export").onclick=()=>{const blob=new Blob([JSON.stringify({P,T,fight},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bb_fight.json";a.click();};
+  $("import").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);P=d.P||4;T=d.T||1;fight=d.fight||{};$("pVal").textContent=P;$("tVal").textContent="T"+T;renderFight();}catch(err){alert("Not a fight file.");}};r.readAsText(f);};
+  $("genNames").onclick=names;
+  $("advReg").innerHTML=["All",...new Set(BESTIARY.map(b=>b.reg))].map(r=>`<option>${r}</option>`).join("");
+  $("forgeAdv").onclick=forgeAdventure;
+  $("advCopy").onclick=()=>{navigator.clipboard.writeText("B&B ADVENTURE — seed: "+$("advSeed").value+"\n\n"+window.lastAdvText);$("advCopy").textContent="Copied";setTimeout(()=>$("advCopy").textContent="Copy adventure",1200);};
+  $("advToFight").onclick=()=>{if(!window.lastAdv)return; fight={}; fight[window.lastAdv.boss]=1;
+    const rnd2=mulberry32(hashStr("escort:"+$("advSeed").value)); const b=budgets(); let spent=byName(window.lastAdv.boss).xp;
+    const chaff=BESTIARY.filter(x=>["Mook","Soldier","Tough"].includes(x.rank)); let g=0;
+    while(spent<b.dead*0.95&&g++<25){const c2=chaff.filter(x=>x.xp<=b.dead-spent); if(!c2.length)break; const c=c2[Math.floor(rnd2()*c2.length)]; fight[c.n]=(fight[c.n]||0)+1; spent+=c.xp;}
+    renderFight(); document.querySelector('[data-pane=paneFight]').click();};
+  $("forgeReg").innerHTML=["All",...new Set(BESTIARY.map(b=>b.reg))].map(r=>`<option>${r}</option>`).join("");
+  $("forgeFight").onclick=forgeFight;
+  $("nextRound").onclick=()=>{run.round++;run.units.forEach(u=>{if(u.rxMax)u.rxLeft=u.rxMax;});renderRun();};
+  $("resetRun").onclick=dealRun;
+  $("reInit").onclick=()=>{buildSlots();renderRun();};
+  document.querySelectorAll(".die").forEach(x=>x.onclick=()=>dRoll(+x.dataset.s));
+  const reg=$("register"); reg.innerHTML=Object.keys(REGISTERS).map(r=>`<option>${r}</option>`).join("");
+  document.querySelectorAll(".tabBtn").forEach(b=>b.onclick=()=>{
+    document.querySelectorAll(".tabBtn").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); $(b.dataset.pane).classList.add("on"); if(b.dataset.pane==="paneRun"&&runStale)dealRun();});
+  renderRoster(); renderFight();
+}
+document.addEventListener("DOMContentLoaded",init);
+
+</script><script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body></html>

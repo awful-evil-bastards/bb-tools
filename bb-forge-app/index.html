@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1512">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biceps &amp; Brimstone — Character Forge</title>
+<style>
+  :root{
+    --bg-darkest:#15110d; --bg:#1c1712; --bg-card:#2a221b; --bg-soft:#221b15;
+    --border:#3d3128; --text:#e8dcc8; --text-faded:#9a8a76;
+    --accent:#c8842e; --flame:#b3372e; --success:#6a9a52; --danger:#c2453b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg-darkest); color:var(--text);
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    line-height:1.5; padding:0 0 60px;
+  }
+  .wrap{max-width:min(1240px, 96vw); margin:0 auto; padding:0 16px;}
+  header.top{
+    background:linear-gradient(180deg,#241c15,#15110d); border-bottom:2px solid var(--accent);
+    padding:18px 16px 14px; text-align:center; margin-bottom:8px;
+  }
+  header.top h1{margin:0; font-size:26px; letter-spacing:1px; color:var(--text);}
+  header.top h1 b{color:var(--flame);}
+  header.top .sub{font-size:12px; color:var(--text-faded); letter-spacing:3px; text-transform:uppercase; margin-top:4px;}
+
+  /* progress */
+  .steps{display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin:10px 0 16px;}
+  .step-pill{
+    font-size:10px; text-transform:uppercase; letter-spacing:1px; padding:4px 8px; border-radius:20px;
+    border:1px solid var(--border); color:var(--text-faded); background:var(--bg-card); cursor:pointer; white-space:nowrap;
+  }
+  .step-pill.active{border-color:var(--accent); color:var(--bg-darkest); background:var(--accent); font-weight:bold;}
+  .step-pill.done{color:var(--success); border-color:var(--success);}
+
+  .panel{display:none; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:18px 18px 20px;}
+  .panel.active{display:block;}
+  .panel h2{margin:0 0 2px; font-size:21px; color:var(--accent);}
+  .panel .lead{color:var(--text-faded); font-size:13px; margin:0 0 16px;}
+
+  label.fld{display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faded); margin:14px 0 4px;}
+  select,input[type=text],input[type=number]{
+    width:100%; background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+    padding:9px 10px; border-radius:5px; font-family:inherit; font-size:15px;
+  }
+  select:focus,input:focus{outline:none; border-color:var(--accent);}
+  textarea{width:100%; background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+    padding:9px 10px; border-radius:5px; font-family:inherit; font-size:14px; resize:vertical; min-height:46px;}
+
+  .info{background:var(--bg-soft); border:1px solid var(--border); border-left:3px solid var(--accent);
+    border-radius:5px; padding:10px 12px; margin-top:10px; font-size:13px;}
+  .info b{color:var(--text);}
+  .info.warn{border-left-color:var(--flame);}
+  .info.good{border-left-color:var(--success);}
+  .muted{color:var(--text-faded); font-size:12px;}
+  .pointer{color:var(--text-faded); font-size:11px; font-style:italic; margin-top:8px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  @media(max-width:560px){.grid2,.grid3{grid-template-columns:1fr 1fr;}}
+
+  .abil-row{display:grid; grid-template-columns:1.4fr 1fr auto auto; gap:8px; align-items:center; margin-bottom:6px;}
+  .abil-row .nm{font-size:14px;}
+  .abil-row .final{font-weight:bold; font-size:16px; color:var(--accent); text-align:center; min-width:34px;}
+  .abil-row .mod{font-size:13px; color:var(--text-faded); min-width:34px; text-align:center;}
+
+  .method-tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .method-tabs button{flex:1; min-width:120px; background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+    padding:8px; border-radius:5px; cursor:pointer; font-family:inherit; font-size:12px; text-transform:uppercase; letter-spacing:1px;}
+  .method-tabs button.active{background:var(--accent); color:var(--bg-darkest); border-color:var(--accent); font-weight:bold;}
+
+  .skill-cat{margin-top:14px;}
+  .skill-cat h4{margin:0 0 6px; font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--accent); border-bottom:1px solid var(--border); padding-bottom:3px;}
+  .skill-item{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:14px;}
+  .skill-item input{width:auto;}
+  .skill-item .tag{margin-left:auto; font-size:10px; color:var(--text-faded); letter-spacing:1px;}
+  .skill-item.locked{opacity:.8;}
+  .skill-item.locked .locknote{font-size:10px; color:var(--accent); letter-spacing:1px;}
+
+  .chk{display:flex; align-items:center; gap:8px; font-size:14px; padding:4px 0;}
+  .chk input{width:auto;}
+
+  .nav{display:flex; justify-content:space-between; gap:10px; margin-top:20px;}
+  .btn{background:var(--bg-card); border:1px solid var(--border); color:var(--text); padding:10px 18px;
+    border-radius:6px; cursor:pointer; font-family:inherit; font-size:14px; letter-spacing:.5px;}
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent); color:var(--bg-darkest); border-color:var(--accent); font-weight:bold;}
+  .btn.flame{background:var(--flame); color:#fff; border-color:var(--flame); font-weight:bold;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+
+  /* review */
+  .sheet-out{background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:14px 16px;}
+  .sheet-out h3{margin:0 0 4px; font-size:20px; color:var(--text);}
+  .sheet-out .role{color:var(--text-faded); font-size:13px; margin-bottom:12px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:10px 0;}
+  .stat-box{background:var(--bg-soft); border:1px solid var(--border); border-radius:5px; padding:8px; text-align:center;}
+  .stat-box .k{font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--text-faded);}
+  .stat-box .v{font-size:20px; font-weight:bold; color:var(--accent);}
+  .row-out{font-size:13px; margin:5px 0;}
+  .row-out b{color:var(--text);}
+  .out-section{margin-top:12px; padding-top:10px; border-top:1px solid var(--border);}
+  .out-section .hd{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--accent); margin-bottom:4px;}
+
+/* ---- WIDE-SCREEN LAYOUT ---- */
+@media (min-width: 1100px){
+  .wrap,.app,body>.container{max-width:1240px !important}
+  body{--wide:1}
+}
+
+@media (min-width:1100px){ *[style], .step, .card{ } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>BICEPS &amp; <b>BRIMSTONE</b></h1>
+  <div class="sub">Character Forge</div>
+</header>
+
+<div class="wrap">
+  <div class="steps" id="steps"></div>
+
+  <!-- STEP 0: Ancestry -->
+  <div class="panel" data-step="0">
+    <h2>1 · Ancestry</h2>
+    <p class="lead">The blood in your veins and the culture that raised you — it sets your size, speed, and one ability nudge.</p>
+    <label class="fld">Ancestry</label>
+    <select id="anc" onchange="onAncestry()"></select>
+    <div id="anc-info"></div>
+  </div>
+
+  <!-- STEP 1: Class -->
+  <div class="panel" data-step="1">
+    <h2>2 · Class</h2>
+    <p class="lead">What you trained to become. Sets your Hit Point base, resource dice, and signature weapon.</p>
+    <label class="fld">Class</label>
+    <select id="cls" onchange="onClass()"></select>
+    <div id="cls-info"></div>
+    <label class="fld" id="subcls-label" style="display:none">Subclass <span class="muted">(chosen at creation)</span></label>
+    <select id="subcls" style="display:none" onchange="onSubclass()"></select>
+    <label class="fld" id="sig-label" style="display:none">Signature Weapon Skill</label>
+    <select id="sig" style="display:none" onchange="renderSummaryMaybe()"></select>
+  </div>
+
+  <!-- STEP 2: Backgrounds -->
+  <div class="panel" data-step="2">
+    <h2>3 · Backgrounds</h2>
+    <p class="lead">Pick two: one <b>required by your class</b>, one from any list. Each grants 3–5 signature skills (see §4).</p>
+    <label class="fld">Required Background <span id="req-hint" class="muted"></span></label>
+    <select id="bg1" onchange="renderSummaryMaybe()"></select>
+    <label class="fld">Second Background (any)</label>
+    <select id="bg2" onchange="renderSummaryMaybe()"></select>
+    <div class="pointer">Backgrounds grant specific skills (with the occasional “pick one”). You’ll mark them in Step&nbsp;6.</div>
+  </div>
+
+  <!-- STEP 3: Ability Scores -->
+  <div class="panel" data-step="3">
+    <h2>4 · Ability Scores</h2>
+    <p class="lead">Generate six scores, then your ancestry bonuses apply on top.</p>
+    <div class="method-tabs" id="method-tabs">
+      <button data-m="array" class="active" onclick="setMethod('array')">Standard Array</button>
+      <button data-m="point" onclick="setMethod('point')">Point Buy</button>
+      <button data-m="manual" onclick="setMethod('manual')">Manual / Roll</button>
+    </div>
+    <div id="method-help" class="info"></div>
+    <div id="abil-rows" style="margin-top:14px"></div>
+    <div id="anc-choices"></div>
+    <div id="abil-warn"></div>
+  </div>
+
+  <!-- STEP 4: Derived Stats -->
+  <div class="panel" data-step="4">
+    <h2>5 · Derived Stats</h2>
+    <p class="lead">Calculated from your class and scores. Pick your armor to finish your AC.</p>
+    <label class="fld">Armor</label>
+    <select id="armor" onchange="renderDerived()">
+      <option value="0">None (+0)</option>
+      <option value="1">Light — leather (+1)</option>
+      <option value="4">Medium — chainmail (+3 to +5; using +4)</option>
+      <option value="7">Heavy — plate (+6 to +8; using +7)</option>
+    </select>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="shield" onchange="renderDerived()"> Carrying a shield (+2 AC, needs a free hand)</label>
+    <div id="derived-out" style="margin-top:14px"></div>
+  </div>
+
+  <!-- STEP 5: Skills -->
+  <div class="panel" data-step="5">
+    <h2>6 · Skills</h2>
+    <p class="lead">Your class signature weapon is locked in. Check the skills your two backgrounds grant, plus any extras.</p>
+    <div id="skill-budget" class="info"></div>
+    <div id="skills-list"></div>
+  </div>
+
+  <!-- STEP 6: Loadout -->
+  <div class="panel" data-step="6">
+    <h2>7 · Starting Kit &amp; Powers</h2>
+    <p class="lead">What every fresh hero begins play with.</p>
+    <div class="info">
+      <b>Adventurer’s Kit</b> · <b>10 rations</b> · <b>50 coin</b> · your class weapons &amp; armor.
+    </div>
+    <div id="powers-out" style="margin-top:12px"></div>
+  </div>
+
+  <!-- STEP 7: Identity -->
+  <div class="panel" data-step="7">
+    <h2>8 · Identity</h2>
+    <p class="lead">Name your hero and write the three declarations that earn roleplay XP.</p>
+    <label class="fld">Character Name</label>
+    <input type="text" id="cname" oninput="renderSummaryMaybe()" placeholder="e.g. Skarn the Unbroken">
+    <label class="fld">Boast <span class="muted">— a great deed, true or tall</span></label>
+    <textarea id="boast" placeholder="“I slew the dragon Voraxoth at fifteen.”"></textarea>
+    <label class="fld">Burden <span class="muted">— a flaw, scar, debt, or curse</span></label>
+    <textarea id="burden" placeholder="“My family was murdered by the Crimson Order.”"></textarea>
+    <label class="fld">Epithet <span class="muted">— earned at L7, not chosen here; note an ambition if you like</span></label>
+    <textarea id="unique" placeholder="“…the Grey / the Thrice-Scarred / the Last of the Reaver Wars” — the world will decide at L7"></textarea>
+  </div>
+
+  <!-- STEP 8: Review -->
+  <div class="panel" data-step="8">
+    <h2>✦ Your Hero</h2>
+    <p class="lead">Review, then copy the summary or download it to transcribe onto your sheet.</p>
+    <div id="review" class="sheet-out"></div>
+    <div class="nav" style="justify-content:flex-start; flex-wrap:wrap">
+      <button class="btn primary" onclick="sendToSheet()">🚀 Send to Digital Sheet</button>
+      <button class="btn" onclick="copyForSheet()">📥 Copy for Sheet (JSON)</button>
+      <button class="btn" onclick="copySummary()">📋 Copy summary</button>
+      <button class="btn" onclick="downloadJSON()">⬇ Download (.json)</button>
+      <button class="btn" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn" id="back-btn" onclick="go(-1)">← Back</button>
+    <button class="btn primary" id="next-btn" onclick="go(1)">Next →</button>
+  </div>
+</div>
+
+<script>
+// ============ CODE ↔ DISPLAY ============
+const ABIL = ["STR","DEX","CON","INT","WIS","CHA"];
+const ABIL_NAME = {STR:"Might",DEX:"Agility",CON:"Fortitude",INT:"Cunning",WIS:"Focus",CHA:"Presence"};
+const mod = s => s >= 18 ? s - 14 : Math.floor((s-10)/2); // v104: 18/+4, 19/+5, 20/+6
+const ms  = m => (m>=0?"+":"")+m;
+
+// ============ DATA ============
+const ANCESTRIES = {
+  // Civilization — +2 nation bonus, plus Versatile +1 (Westlander is the exception)
+  "Northron":   {grp:"Civilization", fixed:{STR:2}, choose:[{amt:1,opts:"any",label:"Versatile +1"}], size:"Medium", speed:30, trait:"Refuse to Die (1/R&R, drop to 1 HP instead of 0). The north does not raise men who fall easily."},
+  "Southron":   {grp:"Civilization", fixed:{CHA:2}, choose:[{amt:1,opts:"any",label:"Versatile +1"}], size:"Medium", speed:30, trait:"Silver-Tongued (1/scene reroll a failed Persuasion/Deception/Intimidation)."},
+  "Easterling": {grp:"Civilization", fixed:{WIS:2}, choose:[{amt:1,opts:"any",label:"Versatile +1"}], size:"Medium", speed:30, trait:"Disciplined eastern tradition; see §3 for full traits."},
+  "Westlander": {grp:"Civilization", fixed:{}, choose:[{amt:1,opts:"any",label:"+1"},{amt:1,opts:"any",label:"+1"}], size:"Medium", speed:30, trait:"+1 to two abilities of your choice (this IS the Westlander’s Versatile — no separate +1)."},
+  // Beastkin
+  "Panthari":   {grp:"Beastkin", fixed:{STR:1,DEX:1}, choose:[], size:"Medium", speed:30, trait:"Cat-folk hunters — Stalker, claws; see §3."},
+  "Saruki":     {grp:"Beastkin", fixed:{}, choose:[{amt:2,opts:["STR","DEX","WIS"],label:"+2 (Might, Agility, or Focus)"}], size:"Medium", speed:30, trait:"Ape-folk — Brachiator (climb speed, advantage to climb/grapple)."},
+  "Kakari":     {grp:"Beastkin", fixed:{INT:1,WIS:1}, choose:[], size:"Medium", speed:30, trait:"Keen-eyed bird-folk — Keen Sight, Natural Tinkerer."},
+  "Behemoth":   {grp:"Folk", fixed:{STR:1,CON:1}, choose:[], size:"Medium", speed:30, trait:"Unstoppable Bulk — counts one size larger for carry/push/grapple; can’t be moved by smaller foes."},
+  "Taurok":     {grp:"Beastkin", fixed:{STR:1,CHA:1}, choose:[], size:"Medium", speed:30, trait:"Bull-folk — Sign of the Bull (reroll a failed Persuasion/Performance 1/R&R)."},
+  "Varg":       {grp:"Beastkin", fixed:{STR:1,WIS:1}, choose:[], size:"Medium", speed:30, trait:"Wolf-folk pack hunter — fangs 1d6 piercing. Pick Beastly Hunter (1/Breather: mark prey, then advantage + extra 1d6 fangs vs it for the fight) or Keen Snout (scent tracking; cannot be surprised by what you could have smelled)."},
+  // Folk
+  "Altuari":    {grp:"Folk", fixed:{INT:2}, choose:[], size:"Medium", speed:30, trait:"The fallen sky-mages — levitation is theirs alone (1/R&R), and the Old Magick remembers them."},
+  "Kithling":   {grp:"Folk", fixed:{DEX:2}, choose:[], size:"Small", speed:30, trait:"Small, nimble — Natural Stealth in forests & riverlands; Underfoot."},
+  "Dwerg":      {grp:"Folk", fixed:{CON:2}, choose:[], size:"Medium", speed:25, trait:"Stoneskin (+1 AC always) + Iron Gut or Stone Sense. Slow but hard to break."},
+};
+
+// sig: "any" (any of 13), "melee" (any of 10 melee), or a fixed skill name
+// v14: removed expansion classes Pirate & Awakened (base-game builder only).
+// v11: current-rules conversion — ONE unified pool (Muscle martials / Magick casters), 3 dice at L1 (3/5/7/9 by tier) scaling d6->d12; dropped Faith/Inspiration/Daring/Memory; Badassery kept; roster synced to base-9.
+const CLASSES = {
+  "Fighter":   {hp:14, rec:10, res:"Muscle",      caster:false, reqBg:"Soldier",     sig:"any",   note:"The generalist warrior. Combat Mastery specialty chosen at L1."},
+  "Rogue":     {hp:12, rec:8,  res:"Muscle",      caster:false, reqBg:"Criminal",    sig:"subclass", note:"Weapon skill set by path (Thief: your pick of finesse/ranged)."},
+  "Barbarian": {hp:15, rec:12, res:"Muscle",      caster:false, reqBg:"Outlander",   sig:"melee", note:"Toughest HP base in the game; Rage."},
+  "Ranger":    {hp:13, rec:10, res:"Muscle",      caster:false, reqBg:"Outlander",   sig:"Bows"},
+  "Monk":      {hp:12, rec:8,  res:"Muscle",      caster:false, reqBg:"Ascetic",     sig:"Brawling", note:"Unarmored AC = 10 + Agility + Focus."},
+  "Wizard":    {hp:6,  rec:6,  res:"Magick",      caster:true,  reqBg:"Scholar",     sig:"Staves & Rods", note:"Fragile. 6 HP base — guard it."},
+  "Cleric":    {hp:12, rec:8,  res:"Magick",       caster:true,  reqBg:"Acolyte",     sig:"Maces & Clubs"},
+  "Bard":      {hp:10, rec:8,  res:"Magick", caster:true,  reqBg:"Entertainer", sig:"Fencing Blades", note:"Songs need the music: Charm/Skald = voice + instrument; the Dirgist never sings \u2014 the bone flute keens instead. Instrument \u2194 weapon swap = free action 1/turn. Defaults: lute / war-drum / bone flute."},
+  "Druid":     {hp:8,  rec:8,  res:"Magick",      caster:true,  reqBg:"element",     sig:"Staves & Rods", note:"Required background = one of the six elemental Druid backgrounds."},
+  "Maleficar": {hp:8,  rec:6,  res:"Magick",      caster:true,  reqBg:null,          sig:"Knives & Daggers", note:"Dark-arcane hexcaster. Black Magic — deep hexes cost a Madness check (§11.6). Fragile (d6)."},
+};
+
+const SUBCLASS_SIG = {
+  "Ronin":"Swords & Blades","Champion":"Shields",
+  "Thief":"pick-finesse-ranged","Shinobi":"Swords & Blades","Swashbuckler":"Fencing Blades",
+  "Berserker":"Axes & Hammers","Exile":"Swords & Blades",
+  "Stalker":"Bows","Beastmaster":"Polearms & Spears",
+  "Se'diki":"Brawling","Bo'diki":"Staves & Rods",
+  "Battle Mage":"Swords & Blades","Arcanist":"Staves & Rods",
+  "Friar":"Maces & Clubs","Templar":"Swords & Blades",
+  "Elementalist":"Staves & Rods","Shapeshifter":"Staves & Rods",
+  "Skald":"Axes & Hammers","Dirgist":"Flexible Weapons",
+  "Diabolist":"Knives & Daggers","Necromancer":"Knives & Daggers",
+  // base paths (Veteran/Reaver use the class free-pick)
+  "Warden":"Bows","Adept":"Brawling","Magus":"Staves & Rods","Priest":"Maces & Clubs",
+  "Troubadour":"Fencing Blades","Shaman":"Staves & Rods","Hexwright":"Knives & Daggers",
+};
+const FINESSE_RANGED = ["Knives & Daggers","Fencing Blades","Bows","Crossbows & Firearms","Thrown Weapons & Slings"];
+// First entry per class = the BASE PATH (unbranched: generalist moves only; L12 deepens the class capstone instead of a subclass capstone)
+const BASE_PATH = {"Fighter":"Veteran","Rogue":"Thief","Barbarian":"Reaver","Ranger":"Warden","Monk":"Adept","Wizard":"Magus","Cleric":"Priest","Bard":"Troubadour","Druid":"Shaman","Maleficar":"Hexwright"};
+const SUBCLASSES = {
+  "Fighter":["Veteran","Ronin","Champion"], "Rogue":["Thief","Shinobi","Swashbuckler"],
+  "Barbarian":["Reaver","Berserker","Exile"], "Ranger":["Warden","Stalker","Beastmaster"],
+  "Monk":["Adept","Se'diki","Bo'diki"], "Wizard":["Magus","Battle Mage","Arcanist"],
+  "Cleric":["Priest","Friar","Templar"], "Druid":["Shaman","Elementalist","Shapeshifter"],
+  "Bard":["Troubadour","Skald","Dirgist"], "Maleficar":["Hexwright","Diabolist","Necromancer"],
+};
+
+const STANDARD_BG = ["Acolyte","Alchemist","Artisan","Ascetic","Bonesaws","Charlatan","Criminal","Dojo","Entertainer","Folk Hero","Guild Artisan","Investigator","Merchant","Noble","Outlander","Sea Dog","Sage","Sailor","Scholar","Soldier","Urchin"];
+const DRUID_BG = ["Beastspeaker","Green-Warden"];
+
+// Background -> granted skills. "__WEAPON__" = a Bonus Weapon Skill pick (any of 13); {oneOf:[...]} = pick one.
+const BG_SKILLS = {
+  "Soldier":["Athletics","Intimidation","Survival","Perception","__WEAPON__"],
+  "Criminal":["Stealth","Sleight of Hand","Lockpicking & Mechanisms","Deception","Insight"],
+  "Outlander":["Survival","Animal Handling","Athletics","Perception","__WEAPON__"],
+  "Scholar":["Arcana","History & Lore","Investigation","Religion & Occultism","Potions & Alchemy"],
+  "Acolyte":["Religion & Occultism","Medicine","Insight","History & Lore","Persuasion"],
+  "Entertainer":["Performance","Persuasion","Insight","Acrobatics","Deception"],
+  "Ascetic":["Insight","Athletics","Acrobatics","Religion & Occultism","Perception"],
+  "Artisan":[{oneOf:["Smithing & Repair","Lockpicking & Mechanisms"]},"Investigation","History & Lore","Persuasion"],
+  "Alchemist":["Potions & Alchemy","Investigation","Medicine","Sleight of Hand","Arcana"],
+  "Merchant":["Persuasion","Insight","Deception","History & Lore","Sailing & Navigation"],
+  "Noble":["Persuasion","History & Lore","Riding","Performance","__WEAPON__"],
+  "Sailor":["Sailing & Navigation","Athletics","Perception","Survival","__WEAPON__"],
+  "Sea Dog":["Sailing & Navigation","Athletics","Intimidation","Sleight of Hand","__WEAPON__"],
+  "Folk Hero":["Animal Handling","Athletics","Survival","Persuasion","__WEAPON__"],
+  "Dojo":["Insight","Acrobatics","Religion & Occultism","Perception","__WEAPON__"],
+  "Charlatan":["Deception","Sleight of Hand","Persuasion","Performance","Insight"],
+  "Sage":["Arcana","History & Lore","Investigation","Religion & Occultism","Insight"],
+  "Urchin":["Stealth","Survival","Sleight of Hand","Perception","Athletics"],
+  "Investigator":["Investigation","Insight","Perception","Persuasion","History & Lore"],
+  "Guild Artisan":[{oneOf:["Smithing & Repair","Lockpicking & Mechanisms","Potions & Alchemy","Medicine"]},"Persuasion","Investigation","Insight","History & Lore"],
+  "Bonesaws":["Medicine","Potions & Alchemy","Survival","Investigation","Insight"],
+  "Beastspeaker":["Animal Handling","Survival","Religion & Occultism","Perception","Insight"],
+  "Green-Warden":["Survival","Medicine","Religion & Occultism","Animal Handling"],
+};
+
+const SKILL_CANON = [
+  {n:"Brawling",a:["STR","DEX"],c:"Weapon",melee:true},{n:"Swords & Blades",a:["STR","DEX"],c:"Weapon",melee:true},
+  {n:"Knives & Daggers",a:["DEX"],c:"Weapon",melee:true},{n:"Fencing Blades",a:["DEX"],c:"Weapon",melee:true},
+  {n:"Axes & Hammers",a:["STR"],c:"Weapon",melee:true},{n:"Maces & Clubs",a:["STR"],c:"Weapon",melee:true},
+  {n:"Flexible Weapons",a:["DEX"],c:"Weapon",melee:true},{n:"Polearms & Spears",a:["STR"],c:"Weapon",melee:true},
+  {n:"Staves & Rods",a:["STR","DEX"],c:"Weapon",melee:true},{n:"Shields",a:["STR"],c:"Weapon",melee:true},
+  {n:"Bows",a:["DEX"],c:"Weapon",melee:false},{n:"Crossbows & Firearms",a:["DEX"],c:"Weapon",melee:false},
+  {n:"Thrown Weapons & Slings",a:["STR","DEX"],c:"Weapon",melee:false},
+  {n:"Athletics",a:["STR"],c:"Physical"},{n:"Acrobatics",a:["DEX"],c:"Physical"},{n:"Stealth",a:["DEX"],c:"Physical"},{n:"Sleight of Hand",a:["DEX"],c:"Physical"},
+  {n:"Persuasion",a:["CHA"],c:"Social"},{n:"Deception",a:["CHA"],c:"Social"},{n:"Intimidation",a:["STR","CHA"],c:"Social"},{n:"Insight",a:["WIS"],c:"Social"},{n:"Performance",a:["CHA"],c:"Social"},
+  {n:"Arcana",a:["INT"],c:"Knowledge"},{n:"Religion & Occultism",a:["INT","WIS"],c:"Knowledge"},{n:"History & Lore",a:["INT"],c:"Knowledge"},{n:"Investigation",a:["INT"],c:"Knowledge"},{n:"Perception",a:["WIS"],c:"Knowledge"},
+  {n:"Survival",a:["WIS"],c:"Outdoor"},{n:"Animal Handling",a:["WIS"],c:"Outdoor"},{n:"Riding",a:["DEX","WIS"],c:"Outdoor"},{n:"Sailing & Navigation",a:["INT","WIS"],c:"Outdoor"},
+  {n:"Smithing & Repair",a:["STR","INT"],c:"Trades"},{n:"Lockpicking & Mechanisms",a:["DEX"],c:"Trades"},{n:"Medicine",a:["INT"],c:"Trades"},{n:"Potions & Alchemy",a:["INT"],c:"Trades"},
+];
+const CAT_ORDER=["Weapon","Physical","Social","Knowledge","Outdoor","Trades"];
+const CAT_LABEL={Weapon:"Weapon Skills",Physical:"Physical",Social:"Social",Knowledge:"Knowledge & Perception",Outdoor:"Outdoor & Travel",Trades:"Trades & Craft"};
+
+const RES_L1 = {Muscle:"5 Muscle Dice (d6)", Magick:"5 Magick Dice (d6)"};
+const POINT_COST = {8:0,9:1,10:2,11:3,12:4,13:5,14:7,15:9};
+const ARRAY_VALUES = [15,14,13,12,10,8];
+
+// ============ STATE ============
+const S = {
+  step:0, maxStep:8,
+  ancestry:"", cls:"", subclass:"", sig:"", bg1:"", bg2:"",
+  method:"array",
+  base:{STR:"",DEX:"",CON:"",INT:"",WIS:"",CHA:""},
+  ancChoice:[],   // selected ability codes for ancestry choices, by index
+  armor:0, shield:false,
+  skills:{},      // name -> true
+  name:"", boast:"", burden:"", unique:""
+};
+
+// ============ INIT ============
+function opt(v,sel){return `<option ${v===sel?"selected":""}>${v}</option>`;}
+function fillSelect(id, items, placeholder){
+  const el=document.getElementById(id);
+  el.innerHTML = `<option value="">— ${placeholder} —</option>` + items.map(i=>`<option>${i}</option>`).join("");
+}
+window.addEventListener("DOMContentLoaded",()=>{
+  // ancestry grouped
+  const ancEl=document.getElementById("anc");
+  let html=`<option value="">— Select —</option>`;
+  for(const grp of ["Civilization","Beastkin","Folk"]){
+    html+=`<optgroup label="${grp}">`;
+    for(const k in ANCESTRIES) if(ANCESTRIES[k].grp===grp) html+=`<option>${k}</option>`;
+    html+=`</optgroup>`;
+  }
+  ancEl.innerHTML=html;
+  fillSelect("cls", Object.keys(CLASSES), "Select");
+  renderSteps(); showStep(0); setMethod("array");
+});
+
+// ============ STEP NAV ============
+const STEP_NAMES=["Ancestry","Class","Backgrounds","Abilities","Stats","Skills","Kit","Identity","Review"];
+function renderSteps(){
+  document.getElementById("steps").innerHTML = STEP_NAMES.map((nm,i)=>
+    `<div class="step-pill ${i===S.step?'active':''}" onclick="jump(${i})">${i+1}. ${nm}</div>`).join("");
+}
+function showStep(n){
+  S.step=Math.max(0,Math.min(S.maxStep,n));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active", +p.dataset.step===S.step));
+  document.getElementById("back-btn").disabled = S.step===0;
+  document.getElementById("next-btn").style.visibility = S.step===S.maxStep ? "hidden" : "visible";
+  renderSteps();
+  if(S.step===3) renderAbilities();
+  if(S.step===4) renderDerived();
+  if(S.step===5) renderSkills();
+  if(S.step===6) renderPowers();
+  if(S.step===8) renderReview();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function go(d){ commitStep(); showStep(S.step+d); }
+function jump(n){ commitStep(); showStep(n); }
+function commitStep(){
+  S.name=val("cname"); S.boast=val("boast"); S.burden=val("burden"); S.unique=val("unique");
+}
+function val(id){const e=document.getElementById(id); return e?e.value:"";}
+
+// ============ STEP 1: ANCESTRY ============
+function onAncestry(){
+  S.ancestry=val("anc"); S.ancChoice=[];
+  const a=ANCESTRIES[S.ancestry];
+  const box=document.getElementById("anc-info");
+  if(!a){box.innerHTML="";return;}
+  const fixedStr=Object.keys(a.fixed).map(k=>`+${a.fixed[k]} ${ABIL_NAME[k]}`).join(", ")||"—";
+  const chooseStr=a.choose.map(c=>c.label).join(", ");
+  box.innerHTML=`<div class="info">
+    <b>${a.grp}</b> · Size ${a.size} · Speed ${a.speed} ft<br>
+    <b>Ability:</b> ${fixedStr}${chooseStr?` · <i>choose: ${chooseStr}</i>`:""}<br>
+    <span class="muted">${a.trait}</span>
+  </div>`;
+}
+
+// ============ STEP 2: CLASS ============
+function onSubclass(){ S.subclass=val("subcls"); onClass(); }
+function onClass(){
+  S.cls=val("cls"); const c=CLASSES[S.cls];
+  if(!SUBCLASSES[S.cls] || !SUBCLASSES[S.cls].includes(S.subclass)) S.subclass="";
+  const box=document.getElementById("cls-info");
+  const sigLabel=document.getElementById("sig-label"), sigSel=document.getElementById("sig");
+  if(!c){box.innerHTML=""; sigLabel.style.display="none"; sigSel.style.display="none"; document.getElementById("subcls-label").style.display="none"; document.getElementById("subcls").style.display="none"; return;}
+  box.innerHTML=`<div class="info">
+    <b>HP base:</b> ${c.hp} + Fortitude · <b>Recovery die:</b> d${c.rec} · <b>Resource:</b> ${RES_L1[c.res]}<br>
+    <b>Type:</b> ${c.caster?"Spellcaster":"Martial"} · <b>Subclass:</b> choose below
+    ${c.note?`<br><span class="muted">${c.note}</span>`:""}
+  </div>`;
+  // signature weapon picker — subclass weapon fixed (SUBCLASS_SIG); Fighter/Barbarian ALSO get a free pick; Thief picks finesse/ranged
+  let sigItems=null, sigNote="";
+  const subSig = SUBCLASS_SIG[S.subclass];
+  if(c.sig==="any"){ sigItems=SKILL_CANON.filter(s=>s.c==="Weapon").map(s=>s.n); sigNote=" (free pick — on top of your subclass weapon)"; }
+  else if(c.sig==="melee"){ sigItems=SKILL_CANON.filter(s=>s.c==="Weapon"&&s.melee).map(s=>s.n); sigNote=" (free melee pick — on top of your subclass weapon)"; }
+  else if(subSig==="pick-finesse-ranged"){ sigItems=FINESSE_RANGED.slice(); sigNote=" (Thief: pick finesse or ranged)"; }
+  if(sigItems){
+    sigLabel.style.display="block"; sigSel.style.display="block";
+    sigLabel.textContent="Weapon Skill"+sigNote;
+    sigSel.innerHTML=`<option value="">— pick one —</option>`+sigItems.map(i=>opt(i,S.sig)).join("");
+    sigSel.onchange=()=>{S.sig=sigSel.value;};
+  } else {
+    sigLabel.style.display="none"; sigSel.style.display="none";
+    S.sig=(subSig && subSig!=="pick-finesse-ranged") ? subSig : (c.sig!=="subclass"?c.sig:"");
+  }
+  // subclass picker — chosen at creation, same page as class
+  const subLabel=document.getElementById("subcls-label"), subSel=document.getElementById("subcls");
+  subLabel.style.display="block"; subSel.style.display="block";
+  subSel.innerHTML=`<option value="">— choose your path —</option>`+SUBCLASSES[S.cls].map(i=>`<option value="${i}"${i===S.subclass?" selected":""}>${i}${BASE_PATH[S.cls]===i?" (base path — unbranched)":""}</option>`).join("");
+  syncBackgrounds();
+}
+
+// ============ STEP 3: BACKGROUNDS ============
+function syncBackgrounds(){
+  const c=CLASSES[S.cls];
+  const bg1=document.getElementById("bg1"), bg2=document.getElementById("bg2");
+  const hint=document.getElementById("req-hint");
+  const allBg=[...STANDARD_BG, ...DRUID_BG].sort();
+  bg2.innerHTML=`<option value="">— Select —</option>`+allBg.map(i=>opt(i,S.bg2)).join("");
+  if(!c){ bg1.innerHTML=`<option value="">— pick a class first —</option>`; hint.textContent=""; return; }
+  if(c.reqBg==="element"){
+    hint.textContent="(no class requirement — Beastspeaker or Green-Warden are the natural Druid picks)";
+    bg1.innerHTML=`<option value="">— Select —</option>`+allBg.map(i=>opt(i,S.bg1)).join("");
+  } else if(c.reqBg){
+    hint.textContent=`(★ ${c.reqBg})`;
+    bg1.innerHTML=`<option value="">— Select —</option>`+allBg.map(i=>opt(i,S.bg1||c.reqBg)).join("");
+    if(!S.bg1){S.bg1=c.reqBg; bg1.value=c.reqBg;}
+  } else {
+    hint.textContent="(no class requirement — pick any)";
+    bg1.innerHTML=`<option value="">— Select —</option>`+allBg.map(i=>opt(i,S.bg1)).join("");
+  }
+}
+function renderSummaryMaybe(){
+  S.sig=val("sig")||S.sig; S.bg1=val("bg1"); S.bg2=val("bg2"); S.name=val("cname");
+}
+
+// ============ STEP 4: ABILITIES ============
+function setMethod(m){
+  S.method=m;
+  document.querySelectorAll("#method-tabs button").forEach(b=>b.classList.toggle("active",b.dataset.m===m));
+  const help=document.getElementById("method-help");
+  if(m==="array") help.innerHTML="<b>Standard Array (recommended).</b> Assign 15, 14, 13, 12, 10, 8 — each once.";
+  else if(m==="point") help.innerHTML="<b>Point Buy.</b> All scores start at 8; spend 27 points (max 15 before ancestry).";
+  else help.innerHTML="<b>Manual / Roll.</b> Type scores directly, or roll 4d6-drop-lowest six times.";
+  // reset base when switching methods
+  ABIL.forEach(k=>S.base[k]="");
+  renderAbilities();
+}
+function renderAbilities(){
+  const wrap=document.getElementById("abil-rows");
+  let html="";
+  if(S.method==="array"){
+    html=ABIL.map(k=>`<div class="abil-row">
+      <span class="nm">${ABIL_NAME[k]}</span>
+      <select onchange="setBase('${k}',this.value)">
+        <option value="">—</option>${ARRAY_VALUES.map(v=>`<option ${String(v)===String(S.base[k])?'selected':''}>${v}</option>`).join("")}
+      </select>
+      <span class="final" id="fin-${k}">—</span><span class="mod" id="mod-${k}"></span>
+    </div>`).join("");
+  } else if(S.method==="point"){
+    html=ABIL.map(k=>{const v=S.base[k]||8; return `<div class="abil-row">
+      <span class="nm">${ABIL_NAME[k]}</span>
+      <div style="display:flex;gap:6px;align-items:center;justify-content:center">
+        <button class="btn" style="padding:2px 10px" onclick="ptAdj('${k}',-1)">−</button>
+        <b style="min-width:22px;text-align:center">${v}</b>
+        <button class="btn" style="padding:2px 10px" onclick="ptAdj('${k}',1)">+</button>
+      </div>
+      <span class="final" id="fin-${k}">—</span><span class="mod" id="mod-${k}"></span>
+    </div>`;}).join("");
+  } else {
+    html=`<div style="margin-bottom:8px"><button class="btn" onclick="roll4d6()">🎲 Roll 4d6 (drop lowest) ×6</button></div>`+
+    ABIL.map(k=>`<div class="abil-row">
+      <span class="nm">${ABIL_NAME[k]}</span>
+      <input type="number" min="3" max="20" value="${S.base[k]||''}" oninput="setBase('${k}',this.value)">
+      <span class="final" id="fin-${k}">—</span><span class="mod" id="mod-${k}"></span>
+    </div>`).join("");
+  }
+  wrap.innerHTML=`<div class="abil-row" style="color:var(--text-faded);font-size:10px;text-transform:uppercase;letter-spacing:1px"><span>Ability</span><span style="text-align:center">Base</span><span style="text-align:center">Total</span><span style="text-align:center">Mod</span></div>`+html;
+  renderAncChoices();
+  recalcAbilities();
+}
+function setBase(k,v){ S.base[k]=v===""?"":parseInt(v); recalcAbilities(); }
+function ptAdj(k,d){
+  let v=(S.base[k]||8)+d; if(v<8)v=8; if(v>15)v=15; S.base[k]=v; renderAbilities();
+}
+function roll4d6(){
+  const roll=()=>{let d=[0,0,0,0].map(()=>1+Math.floor(Math.random()*6)).sort((a,b)=>a-b); return d[1]+d[2]+d[3];};
+  ABIL.forEach(k=>S.base[k]=roll());
+  S.method="manual"; renderAbilities();
+}
+function renderAncChoices(){
+  const a=ANCESTRIES[S.ancestry], box=document.getElementById("anc-choices");
+  if(!a||!a.choose.length){box.innerHTML=""; return;}
+  let html=`<div class="info" style="margin-top:12px"><b>${S.ancestry} ancestry bonus — assign:</b>`;
+  a.choose.forEach((c,i)=>{
+    const opts=(c.opts==="any"?ABIL:c.opts);
+    html+=`<div style="margin-top:6px">${c.label} to:
+      <select onchange="setAncChoice(${i},this.value)" style="display:inline-block;width:auto;margin-left:6px">
+        <option value="">—</option>${opts.map(k=>`<option value="${k}" ${S.ancChoice[i]===k?'selected':''}>${ABIL_NAME[k]}</option>`).join("")}
+      </select></div>`;
+  });
+  html+=`</div>`; box.innerHTML=html;
+}
+function setAncChoice(i,v){ S.ancChoice[i]=v; recalcAbilities(); }
+function ancBonusFor(k){
+  const a=ANCESTRIES[S.ancestry]; if(!a) return 0;
+  let b=a.fixed[k]||0;
+  a.choose.forEach((c,i)=>{ if(S.ancChoice[i]===k) b+=c.amt; });
+  return b;
+}
+function finalScore(k){
+  const base=parseInt(S.base[k]); if(isNaN(base)) return null;
+  return base+ancBonusFor(k);
+}
+function recalcAbilities(){
+  ABIL.forEach(k=>{
+    const f=finalScore(k);
+    const fe=document.getElementById("fin-"+k), me=document.getElementById("mod-"+k);
+    if(fe){fe.textContent = f===null?"—":f;}
+    if(me){me.textContent = f===null?"":ms(mod(f));}
+  });
+  // warnings
+  const w=document.getElementById("abil-warn"); let msg="";
+  if(S.method==="array"){
+    const used=ABIL.map(k=>S.base[k]).filter(v=>v!=="");
+    const sorted=[...used].map(Number).sort((a,b)=>b-a).join(",");
+    if(used.length===6 && sorted!=="15,14,13,12,10,8") msg=`Array should use each of 15, 14, 13, 12, 10, 8 exactly once.`;
+  } else if(S.method==="point"){
+    const spent=ABIL.reduce((t,k)=>t+(POINT_COST[S.base[k]||8]||0),0);
+    const rem=27-spent;
+    msg=`<b>${rem}</b> point${rem===1?"":"s"} remaining` + (rem<0?" — over budget!":"");
+    w.className = rem<0?"info warn":"info good"; w.innerHTML=msg; return;
+  }
+  const pend=(ANCESTRIES[S.ancestry]?.choose||[]).some((c,i)=>!S.ancChoice[i]);
+  if(pend) msg=(msg?msg+" ":"")+"Assign your ancestry bonus above.";
+  w.className=msg?"info warn":""; w.innerHTML=msg;
+}
+
+// ============ STEP 5: DERIVED ============
+function renderDerived(){
+  S.armor=parseInt(val("armor"))||0; S.shield=document.getElementById("shield").checked;
+  const c=CLASSES[S.cls]; const out=document.getElementById("derived-out");
+  if(!c){out.innerHTML=`<div class="info warn">Pick a class first (Step 2).</div>`; return;}
+  const sc={}; let ready=true;
+  ABIL.forEach(k=>{const f=finalScore(k); sc[k]=f; if(f===null)ready=false;});
+  if(!ready){out.innerHTML=`<div class="info warn">Finish your ability scores (Step 4) to calculate these.</div>`; return;}
+  const hp=c.hp+mod(sc.CON);
+  let ac=10+mod(sc.DEX)+S.armor+(S.shield?2:0);
+  let acNote="10 + Agility + armor"+(S.shield?" + shield":"");
+  if(S.armor===0 && S.cls==="Monk"){ac+=mod(sc.WIS); acNote="10 + Agility + Focus (Monk, unarmored)"+(S.shield?" + shield":"");}
+  const grit=Math.min(mod(sc.STR),mod(sc.CON)), resolve=Math.min(mod(sc.WIS),mod(sc.CHA)), init=mod(sc.DEX), rec=2+mod(sc.CON);
+  out.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box"><div class="k">Hit Points</div><div class="v">${hp}</div></div>
+      <div class="stat-box"><div class="k">Armor Class</div><div class="v">${ac}</div></div>
+      <div class="stat-box"><div class="k">Initiative</div><div class="v">${ms(init)}</div></div>
+      <div class="stat-box"><div class="k">Grit</div><div class="v">${ms(grit)}</div></div>
+      <div class="stat-box"><div class="k">Resolve</div><div class="v">${ms(resolve)}</div></div>
+      <div class="stat-box"><div class="k">Recoveries</div><div class="v">${Math.max(0,rec)}</div></div>
+    </div>
+    <div class="muted">HP = ${c.hp} + Fortitude (${ms(mod(sc.CON))}) · AC = ${acNote} · Grit = lower of Might/Fortitude · Resolve = lower of Focus/Presence (+1 per even level, split as you choose) · Recoveries = 2 + Fortitude modifier.</div>`;
+}
+
+// ============ STEP 6: SKILLS ============
+function classSigSkill(){
+  // ARRAY of granted weapon skills: subclass weapon (fixed) + any free pick
+  const c=CLASSES[S.cls]; if(!c) return [];
+  const out=[];
+  const subSig=SUBCLASS_SIG[S.subclass];
+  if(subSig && subSig!=="pick-finesse-ranged") out.push(subSig);
+  if(S.sig && !out.includes(S.sig)) out.push(S.sig);
+  if(!out.length && c.sig && c.sig!=="any" && c.sig!=="melee" && c.sig!=="subclass") out.push(c.sig);
+  return out;
+}
+function renderSkills(){
+  const sig=classSigSkill();
+  const g=bgGrants();
+  const cun = finalScore("INT")!==null ? Math.max(0,mod(finalScore("INT"))) : 0;
+  const budgetEl=document.getElementById("skill-budget");
+  let lines=[];
+  if(!S.bg1 || !S.bg2){
+    lines.push(`<b>Pick both backgrounds first (Step 3)</b> — then this panel fills in exactly which skills they grant.`);
+  } else {
+    const fixedList=[...g.fixed].sort().join(", ")||"—";
+    lines.push(`<b>${S.bg1}</b> + <b>${S.bg2}</b> grant these skills (auto-selected & locked below): ${fixedList}.`);
+    if(g.weaponPicks) lines.push(`➕ <b>${g.weaponPicks}</b> Bonus Weapon Skill pick${g.weaponPicks===1?"":"s"} — tick any weapon skill below (on top of your class ★).`);
+    g.oneOf.forEach(o=>lines.push(`➕ Pick <b>one</b>: ${o.join(" <i>or</i> ")} — tick your choice below.`));
+  }
+  lines.push(`Your <b>class</b> grants its signature weapon (★, locked). Your <b>Cunning</b> modifier grants <b>${cun}</b> extra pick${cun===1?"":"s"}${cun?"":" (none at Cunning 0 or below)"}. Some ancestries/cultures grant a few more.`);
+  budgetEl.innerHTML=lines.join("<br>");
+  let html="";
+  for(const cat of CAT_ORDER){
+    const items=SKILL_CANON.filter(s=>s.c===cat);
+    html+=`<div class="skill-cat"><h4>${CAT_LABEL[cat]}</h4>`;
+    for(const s of items){
+      const isSig = sig.includes(s.n);
+      const isBg = g.fixed.has(s.n);
+      const locked = isSig || isBg;
+      const tag = s.a.map(x=>ABIL_NAME[x]).join("/");
+      const checked = locked || S.skills[s.n];
+      const note = isSig ? '<span class="lockNote locknote">class ★</span>' : (isBg ? '<span class="lockNote locknote">background</span>' : '');
+      html+=`<label class="skill-item ${locked?'locked':''}">
+        <input type="checkbox" ${checked?'checked':''} ${locked?'disabled':''} onchange="toggleSkill('${s.n.replace(/'/g,"\\'")}',this.checked)">
+        <span>${s.n}</span>
+        ${note}
+        <span class="tag">${tag}</span>
+      </label>`;
+    }
+    html+=`</div>`;
+  }
+  document.getElementById("skills-list").innerHTML=html;
+}
+function toggleSkill(n,on){ if(on) S.skills[n]=true; else delete S.skills[n]; }
+
+// ============ STEP 7: POWERS ============
+function renderPowers(){
+  const c=CLASSES[S.cls]; const out=document.getElementById("powers-out");
+  if(!c){out.innerHTML=`<div class="info warn">Pick a class first.</div>`; return;}
+  if(c.caster){
+    const mPrep = finalScore("INT")!==null ? "(spell ability mod + 1)" : "(spell ability mod + 1)";
+    out.innerHTML=`<div class="info"><b>Spellcaster — ${S.cls}</b><br>
+      • Access to your full class spell list<br>
+      • Cast <b>anything you know</b> — no prepare step; spell picks at L2/3/4/6/7/9, plus discoveries (spells are treasure)<br>
+      • <b>No spell slots</b> — every spell is cast from your Magick Dice pool (◆ Lesser 1 die · ◈ Greater 2 · ◉ Dire 3, then the +1/+2/+3 ladder)<br>
+      • ${RES_L1[c.res]} per breather (size scales d6→d12 with level)<br>
+      • Plus <b>Badassery Dice</b> (everyone) and at-will cantrips/tricks — see §8.6 / §9.</div>`;
+  } else {
+    out.innerHTML=`<div class="info"><b>Martial — ${S.cls}</b><br>
+      • <b>3 starting Muscle Moves</b> (choose from your class list, §8.6)<br>
+      • ${RES_L1[c.res]} per breather (size scales d6→d12 with level)<br>
+      • Plus <b>Badassery Dice</b> (everyone) — see §9.</div>`;
+  }
+}
+
+// ============ STEP 8: REVIEW ============
+function bgGrants(){
+  const g={fixed:new Set(), weaponPicks:0, oneOf:[]};
+  for(const bg of [S.bg1,S.bg2]){
+    const arr=BG_SKILLS[bg]; if(!arr) continue;
+    for(const e of arr){
+      if(e==="__WEAPON__") g.weaponPicks++;
+      else if(e && e.oneOf) g.oneOf.push(e.oneOf);
+      else g.fixed.add(e);
+    }
+  }
+  return g;
+}
+function trained(){
+  const set=new Set(Object.keys(S.skills));
+  for(const w of classSigSkill()) set.add(w);
+  for(const sk of bgGrants().fixed) set.add(sk);
+  return [...set];
+}
+function reviewData(){
+  const sc={}; ABIL.forEach(k=>sc[k]=finalScore(k));
+  const c=CLASSES[S.cls]||{};
+  const ready=ABIL.every(k=>sc[k]!==null);
+  const hp = ready? c.hp+mod(sc.CON) : null;
+  let ac=null,acNote="";
+  if(ready){
+    ac=10+mod(sc.DEX)+S.armor+(S.shield?2:0);
+    if(S.armor===0&&S.cls==="Monk")ac+=mod(sc.WIS);
+  }
+  return {sc,ready,hp,ac,c};
+}
+function renderReview(){
+  commitStep();
+  const {sc,ready,hp,ac,c}=reviewData();
+  const a=ANCESTRIES[S.ancestry];
+  const sig=classSigSkill();
+  const div=document.getElementById("review");
+  const abilLine = ABIL.map(k=>`${ABIL_NAME[k]} <b>${sc[k]??"—"}</b> (${sc[k]!=null?ms(mod(sc[k])):"—"})`).join(" · ");
+  const grit = ready?ms(Math.min(mod(sc.STR),mod(sc.CON))):"—", resolve=ready?ms(Math.min(mod(sc.WIS),mod(sc.CHA))):"—", init=ready?ms(mod(sc.DEX)):"—", rec=ready?Math.max(0,2+mod(sc.CON)):"—";
+  div.innerHTML=`
+    <h3>${S.name||"Unnamed Hero"}</h3>
+    <div class="role">${S.ancestry||"—"} ${S.cls||"—"}${S.subclass?` · ${S.subclass}`:""}${a?` · ${a.size}, ${a.speed} ft`:""}</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="k">HP</div><div class="v">${hp??"—"}</div></div>
+      <div class="stat-box"><div class="k">AC</div><div class="v">${ac??"—"}</div></div>
+      <div class="stat-box"><div class="k">Init</div><div class="v">${init}</div></div>
+      <div class="stat-box"><div class="k">Grit</div><div class="v">${grit}</div></div>
+      <div class="stat-box"><div class="k">Resolve</div><div class="v">${resolve}</div></div>
+      <div class="stat-box"><div class="k">Recoveries</div><div class="v">${rec}</div></div>
+    </div>
+    <div class="row-out">${abilLine}</div>
+    <div class="out-section"><div class="hd">Backgrounds</div>${S.bg1||"—"} · ${S.bg2||"—"}</div>
+    <div class="out-section"><div class="hd">Weapon Skills</div>${sig.join(", ")||"—"}</div>
+    <div class="out-section"><div class="hd">Trained Skills</div>${trained().join(", ")||"—"}</div>
+    <div class="out-section"><div class="hd">Resource</div>${c.res?RES_L1[c.res]+" + Badassery Dice":"—"} · Recovery die d${c.rec||"—"}</div>
+    <div class="out-section"><div class="hd">Starting Kit</div>Adventurer’s Kit · 10 rations · 50 coin · class weapons &amp; armor</div>
+    <div class="out-section"><div class="hd">Boast</div>${S.boast||"<span class='muted'>—</span>"}</div>
+    <div class="out-section"><div class="hd">Burden</div>${S.burden||"<span class='muted'>—</span>"}</div>
+    <div class="out-section"><div class="hd">Epithet (L7)</div>${S.unique||"<span class='muted'>— earned at L7</span>"}</div>
+    
+    <div class="pointer" style="margin-top:10px">Path: <b>${S.subclass||"—"}</b>${BASE_PATH[S.cls]===S.subclass?" — base path: generalist moves only; at L12 your class capstone deepens instead of a subclass capstone":""} (chosen at creation). Pick your starting Muscle Moves / spells from §8.6 (more at L2/3/4/6/7/9).</div>`;
+}
+function buildSheetData(){
+  const {sc,ready,hp}=reviewData();
+  const armorMap={0:"",1:"Leather",4:"Chain Shirt",7:"Plate"};
+  const sk={}; trained().forEach(n=>{ sk[n]={trained:true}; });
+  const a=ANCESTRIES[S.ancestry]||{};
+  const d={
+    "char-name":S.name||"", "char-level":1, "char-xp":0,
+    "char-ancestry":S.ancestry||"", "char-class":S.cls||"", "char-subclass":S.subclass||"", "char-tradition":"",
+    "char-bg1":S.bg1||"", "char-bg2":S.bg2||"",
+    "score-STR":sc.STR??10, "score-DEX":sc.DEX??10, "score-CON":sc.CON??10,
+    "score-INT":sc.INT??10, "score-WIS":sc.WIS??10, "score-CHA":sc.CHA??10,
+    "armor-select":(armorMap[S.armor]!==undefined?armorMap[S.armor]:""), "shield-select":S.shield?"2":"0",
+    "char-boast":S.boast||"", "char-burden":S.burden||"", "char-unique":S.unique||"",
+    "ancestry-traits":a.trait?(S.ancestry+": "+a.trait):"",
+    "class-features":"Lvl 1: "+(S.subclass?(S.subclass+" subclass (chosen at creation). "):"")+"Pick your starting Exploits (Muscle Moves / Magick Tricks) from \u00a78.6.",
+    "skillsState":sk, "customSkills":[], "scars":[], "afflictions":[], "bbForge":1
+  };
+  if(ready){ const rc=Math.max(0,2+mod(sc.CON)); d["hp-max"]=hp; d["hp-current"]=hp; d["recov-max"]=rc; d["recov-current"]=rc; }
+  return d;
+}
+function encodeChar(){ return btoa(unescape(encodeURIComponent(JSON.stringify(buildSheetData())))); }
+function sendToSheet(){
+  if(!S.cls){ alert("Pick a class first — there's nothing to send yet."); return; }
+  const url="biceps_brimstone_charsheet_v26.html#c="+encodeChar();
+  const w=window.open(url,"_blank");
+  if(!w) prompt("Pop-up blocked. Open your digital sheet (same folder), then paste this URL into the address bar:", url);
+}
+function copyForSheet(){
+  if(!S.cls){ alert("Pick a class first — there's nothing to copy yet."); return; }
+  const json=JSON.stringify(buildSheetData());
+  const done=()=>alert("Character copied as JSON.\n\nIn the digital sheet: \u2630 Menu \u2192 Import JSON / Forge character \u2192 paste.");
+  if(navigator.clipboard) navigator.clipboard.writeText(json).then(done,()=>prompt("Copy this JSON, then paste into the sheet's Import:",json));
+  else prompt("Copy this JSON, then paste into the sheet's Import:",json);
+}
+function summaryText(){
+  const {sc,ready,hp,ac}=reviewData(); const c=CLASSES[S.cls]||{};
+  const L=[];
+  L.push(`=== BICEPS & BRIMSTONE — ${S.name||"Unnamed Hero"} ===`);
+  L.push(`${S.ancestry||"—"} ${S.cls||"—"}${S.subclass?` (${S.subclass})`:""}`);
+  L.push(`Abilities: `+ABIL.map(k=>`${ABIL_NAME[k]} ${sc[k]??"—"} (${sc[k]!=null?ms(mod(sc[k])):"—"})`).join(", "));
+  L.push(`HP ${hp??"—"} | AC ${ac??"—"} | Init ${ready?ms(mod(sc.DEX)):"—"} | Grit ${ready?ms(Math.min(mod(sc.STR),mod(sc.CON))):"—"} | Resolve ${ready?ms(Math.min(mod(sc.WIS),mod(sc.CHA))):"—"} | Recoveries ${ready?Math.max(0,2+mod(sc.CON)):"—"}`);
+  L.push(`Backgrounds: ${S.bg1||"—"}, ${S.bg2||"—"}`);
+  L.push(`Weapon skills: ${classSigSkill().join(", ")||"—"}`);
+  L.push(`Trained skills: ${trained().join(", ")||"—"}`);
+  L.push(`Resource: ${c.res?RES_L1[c.res]:"—"} + Badassery | Recovery die d${c.rec||"—"}`);
+  L.push(`Kit: Adventurer's Kit, 10 rations, 50 coin, class weapons & armor`);
+  L.push(`Boast: ${S.boast||"—"}`);
+  L.push(`Burden: ${S.burden||"—"}`);
+  L.push(`Epithet (earned L7): ${S.unique||"—"}`);
+  L.push(`Path: ${S.subclass||"—"}${BASE_PATH[S.cls]===S.subclass?" (base path)":""} (chosen at creation). Pick starting Muscle Moves / spells from §8.6 (more at L2/3/4/6/7/9).`);
+  return L.join("\n");
+}
+function copySummary(){
+  const t=summaryText();
+  navigator.clipboard?.writeText(t).then(()=>alert("Summary copied to clipboard!"),()=>fallbackCopy(t));
+  if(!navigator.clipboard) fallbackCopy(t);
+}
+function fallbackCopy(t){
+  const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
+  try{document.execCommand("copy"); alert("Summary copied!");}catch(e){alert("Copy failed — select the text manually.");}
+  document.body.removeChild(ta);
+}
+function downloadJSON(){
+  commitStep();
+  const {sc}=reviewData();
+  const data={name:S.name,ancestry:S.ancestry,cls:S.cls,subclass:S.subclass,backgrounds:[S.bg1,S.bg2],
+    signatureWeapon:classSigSkill().join(", "),abilities:sc,trainedSkills:trained(),
+    armor:S.armor,shield:S.shield,boast:S.boast,burden:S.burden,unique:S.unique};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download=(S.name||"character").replace(/[^a-z0-9]+/gi,"_")+".json"; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body>
+</html>

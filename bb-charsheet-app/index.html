@@ -1,0 +1,4826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1512">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Biceps & Brimstone">
+<meta name="description" content="Interactive character sheet for Biceps & Brimstone RPG">
+<title>Biceps & Brimstone — Character Sheet</title>
+<!-- v17: "Maladies" renamed to "Afflictions" throughout (display text, code identifiers, and the save key), syncing with rulebook v57+. Old v16 saves still load (legacy "maladies" key is read as a fallback). -->
+<!-- v28: converted to current rules — ONE unified pool (Muscle Dice for martials, Magick Dice for casters; 5/6/7/8 by tier, d6-d12); dropped Faith/Daring/Inspiration/Memory pools; Badassery kept as meta-currency. Roster synced to base-9 (Rogue: Shinobi/Swashbuckler; Monk: Se'diki/Bo'diki; Bard: Skald/Dirgist; etc.). Pregens + Pirate/Awakened subclasses still pending.
+     v31: synced to rules v104.2 — Spillover default (stances → Cautious/Defensive move keywords); Momentum Die (was escalation); NO prepare step (cast anything known; picks at martial cadence + discovery; spells are treasure); tier-growth ladders. Prior (v30): spell slots removed; Grit/Resolve = lower-of + player-allocated raises (+1/even level) in both display AND roll; Maleficar fully wired (Black Magic note); cantrip tier-scaling text. -->
+<!-- v18: synced to rulebook v60 — added the Awakened & Pirate classes (+ subclasses, hit dice, and Daring/Inspiration resource dice); added the Duelist & Cultist subclasses; reworked Shatter (armor = static AC, no Structural Damage; shields & weapons sacrifice to fully negate one attack; Die of Fate kept); Monk/Pirate unarmored AC; backgrounds Pirate→Sea Dog + Alchemist. -->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  /* Dark theme is default */
+  --bg-darkest: #0a0505;
+  --bg-dark: #1a0a0a;
+  --bg-mid: #2a1410;
+  --bg-card: #2e1815;
+  --border: #4a2820;
+  --primary: #c41e3a;
+  --primary-dark: #8b0000;
+  --primary-light: #e84855;
+  --accent: #d4a017;
+  --accent-bright: #ffa500;
+  --flame: #ff6b35;
+  --text: #f5e6d3;
+  --text-dim: #b8a890;
+  --text-faded: #7a6a55;
+  --success: #5dbb63;
+  --danger: #c41e3a;
+  --shadow: 0 4px 14px rgba(0,0,0,0.4);
+  --title-gradient: linear-gradient(180deg, var(--flame) 0%, var(--primary) 50%, var(--primary-dark) 100%);
+}
+
+body.theme-light {
+  /* Minimalist: black / white / grey / red */
+  --bg-darkest: #ffffff;
+  --bg-dark: #f8f8f8;
+  --bg-mid: #ececec;
+  --bg-card: #ffffff;
+  --border: #d4d4d4;
+  --primary: #c41e3a;
+  --primary-dark: #8b0000;
+  --primary-light: #e84855;
+  --accent: #c41e3a;
+  --accent-bright: #c41e3a;
+  --flame: #c41e3a;
+  --text: #1a1a1a;
+  --text-dim: #555555;
+  --text-faded: #999999;
+  --success: #1a1a1a;
+  --danger: #c41e3a;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --title-gradient: linear-gradient(180deg, #c41e3a 0%, #8b0000 100%);
+}
+
+/* Light theme tweaks: subtler topbar, more refined dice roller */
+body.theme-light .topbar {
+  background: #ffffff;
+  border-bottom: 2px solid var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+body.theme-light .topbar-title {
+  color: var(--primary-dark);
+}
+body.theme-light .dice-roller {
+  background: #ffffff;
+  border-top: 2px solid var(--primary);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+body.theme-light .title-block {
+  background: #ffffff;
+}
+body.theme-light .stat-box,
+body.theme-light .ability,
+body.theme-light .item,
+body.theme-light .mini-stat,
+body.theme-light .slot-level,
+body.theme-light .condition-card,
+body.theme-light .overlay-content {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+body.theme-light .escalation,
+body.theme-light .trigger-display {
+  background: var(--bg-dark);
+}
+body.theme-light .ability.has-condition {
+  background: #fff5f5;
+}
+body.theme-light .condition-card.active {
+  background: #fff5f5;
+}
+body.theme-light .death-save {
+  background: #fff5f5;
+}
+body.theme-light .dice-result-value.crit {
+  animation: flash-light 0.5s;
+}
+@keyframes flash-light {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); color: var(--primary); }
+}
+
+html, body {
+  background: var(--bg-darkest);
+  color: var(--text);
+  font-family: 'Trebuchet MS', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 200px;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* TOP BAR */
+.topbar {
+  background: linear-gradient(to bottom, var(--primary-dark), var(--bg-dark));
+  border-bottom: 2px solid var(--primary);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.topbar-title {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.topbar-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn:hover, .btn:active {
+  background: var(--primary-dark);
+  border-color: var(--primary);
+}
+.btn-primary {
+  background: var(--primary-dark);
+  border-color: var(--primary);
+  color: var(--text);
+}
+.btn-primary:hover {
+  background: var(--primary);
+}
+.btn-flame {
+  background: var(--flame);
+  color: var(--bg-darkest);
+  border-color: var(--accent);
+  font-weight: bold;
+}
+
+/* TITLE */
+.title-block {
+  text-align: center;
+  padding: 16px 16px 8px;
+  background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-darkest) 100%);
+}
+.title-main {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  background: var(--title-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-style: italic;
+  transform: skewX(-5deg);
+  display: inline-block;
+}
+body:not(.theme-light) .title-main {
+  text-shadow: 0 0 30px rgba(255,107,53,0.3);
+}
+.title-sub {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 4px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* TABS */
+.tab-bar {
+  display: flex;
+  background: var(--bg-darkest);
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  flex: 1 0 auto;
+  min-width: 80px;
+  padding: 12px 10px;
+  background: var(--bg-dark);
+  color: var(--text-faded);
+  border: none;
+  border-right: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn:hover { background: var(--bg-mid); color: var(--text-dim); }
+.tab-btn.active {
+  background: var(--bg-mid);
+  color: var(--accent-bright);
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-bright);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* TORCH INDICATOR (dice roller) */
+.torch-indicator {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-faded);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  z-index: 5;
+}
+.torch-indicator:hover {
+  background: var(--bg-mid);
+  color: var(--text-dim);
+}
+.torch-indicator.lit {
+  border-color: var(--flame);
+  color: var(--flame);
+  background: var(--bg-card);
+  box-shadow: 0 0 8px rgba(255, 107, 53, 0.3);
+  animation: torch-flicker 2.4s ease-in-out infinite;
+}
+.torch-indicator.lit .torch-icon {
+  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.6));
+}
+.torch-indicator.warning {
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: torch-flicker 0.8s ease-in-out infinite;
+}
+@keyframes torch-flicker {
+  0%, 100% { opacity: 1; }
+  45%, 55% { opacity: 0.78; }
+  50% { opacity: 0.92; }
+}
+.torch-indicator.unlit .torch-icon {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+/* The dice-roller needs position:relative for the absolute indicator */
+.dice-roller { position: relative; }
+
+/* SKILLS */
+.skill-cat-header {
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+/* PERMANENT SCARS */
+.scar-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.scar-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--danger);
+  margin-top: 1px;
+}
+.scar-body {
+  flex: 1;
+  min-width: 0;
+}
+.scar-name {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.scar-effect {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.scar-source {
+  font-size: 9px;
+  color: var(--text-faded);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+.scar-delete {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-faded);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.scar-delete:hover {
+  background: var(--danger);
+  color: white;
+}
+.scar-empty {
+  font-size: 11px;
+  color: var(--text-faded);
+  font-style: italic;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+/* MUSCLE MOVE TOGGLE on weapons */
+.weapon-move-toggle {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-faded);
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+}
+.weapon-move-toggle:hover {
+  background: var(--bg-mid);
+  color: var(--text-dim);
+}
+.weapon-move-toggle.active {
+  background: var(--flame);
+  border-color: var(--flame);
+  color: var(--bg-darkest);
+  font-weight: 700;
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.5);
+}
+.skill-cat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+@media (min-width: 500px) {
+  .skill-cat-grid { grid-template-columns: 1fr 1fr; }
+}
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.skill-row.trained {
+  border-color: var(--accent);
+  background: linear-gradient(90deg, var(--bg-card) 80%, rgba(212,160,23,0.07) 100%);
+}
+.skill-circle {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid var(--text-faded);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.skill-circle.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 4px var(--accent);
+}
+.skill-name {
+  flex: 1;
+  cursor: pointer;
+  color: var(--text);
+  user-select: none;
+}
+.skill-row.trained .skill-name { color: var(--accent-bright); font-weight: 500; }
+.skill-name:hover { color: var(--accent-bright); }
+.skill-ability {
+  font-size: 10px;
+  color: var(--text-faded);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.skill-delete {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-faded);
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.skill-delete:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* CHARACTER HEADER */
+.char-header {
+  padding: 12px 16px;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border);
+}
+
+.char-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 70px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.char-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.field label {
+  font-size: 9px;
+  color: var(--text-faded);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.field input, .field select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 14px;
+  width: 100%;
+}
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--bg-mid);
+}
+.field-level input {
+  text-align: center;
+  font-weight: bold;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+/* ABILITY SCORES */
+.section {
+  padding: 12px 16px;
+  background: var(--bg-darkest);
+  border-bottom: 1px solid var(--border);
+}
+.section-title {
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  font-weight: bold;
+}
+
+.abilities-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (min-width: 600px) {
+  .abilities-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.ability {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.ability:hover, .ability:active {
+  border-color: var(--accent);
+  background: var(--bg-mid);
+}
+.ability.has-condition {
+  border-color: var(--danger);
+  background: linear-gradient(135deg, var(--bg-card), rgba(196,30,58,0.15));
+}
+.ability-name {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  margin-bottom: 4px;
+}
+.ability-mod {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+}
+.ability-score {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.ability-score input {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  text-align: center;
+  width: 40px;
+  font-size: 11px;
+  font-family: inherit;
+}
+.ability-condition {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 8px;
+  color: var(--danger);
+  font-weight: bold;
+}
+.ability-condition-name {
+  font-size: 8px;
+  color: var(--text-faded);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ability-condition-name.active {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+/* COMBAT STATS */
+.combat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+.stat-box-title {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+.stat-tracker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.stat-tracker .tracker-btn {
+  background: var(--primary-dark);
+  border: 1px solid var(--primary);
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-tracker .tracker-btn:active {
+  background: var(--primary);
+}
+.stat-tracker .tracker-value {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text);
+}
+.stat-tracker .tracker-value input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: center;
+  width: 100%;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: inherit;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.stat-row input {
+  background: var(--bg-mid);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: center;
+  width: 50px;
+  padding: 3px;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.combat-stats-4 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.toggle-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+}
+.toggle-box input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.toggle-box small {
+  color: var(--text-faded);
+  font-size: 10px;
+}
+.mini-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 4px;
+  text-align: center;
+}
+.mini-stat-label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.mini-stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text);
+}
+.mini-stat-value input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: center;
+  width: 100%;
+  font-size: 20px;
+  font-weight: bold;
+  font-family: inherit;
+}
+.mini-stat.clickable { cursor: pointer; }
+.mini-stat.clickable:active { background: var(--bg-mid); }
+
+/* BUBBLES (Recoveries, Dice, Spell Slots) */
+.bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.bubble {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bubble.filled {
+  background: var(--flame);
+  border-color: var(--flame);
+  box-shadow: 0 0 6px rgba(255,107,53,0.5);
+}
+.bubble.spent {
+  background: var(--bg-darkest);
+  border-color: var(--text-faded);
+}
+
+/* MUSCLE DICE / SPELL SLOTS */
+.dice-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dice-count {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--flame);
+}
+.dice-size {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+/* SPELL SLOTS */
+.spell-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+@media (min-width: 600px) {
+  .spell-slots-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+.slot-level {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  text-align: center;
+}
+.slot-level-label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.slot-bubbles {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.slot-bubbles .bubble {
+  width: 14px;
+  height: 14px;
+}
+
+/* CONDITIONS */
+.conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+@media (min-width: 500px) {
+  .conditions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.condition-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.condition-card.active {
+  background: linear-gradient(135deg, var(--bg-card), rgba(196,30,58,0.25));
+  border-color: var(--danger);
+}
+.condition-card-name {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.condition-card.active .condition-card-name {
+  color: var(--danger);
+}
+.condition-card-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* TEXT AREAS */
+.textarea-field {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  min-height: 80px;
+  resize: vertical;
+}
+.textarea-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ITEM LISTS (Weapons, Spells, Equipment) */
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.item-name {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 2px;
+}
+.item-name:focus {
+  outline: 1px solid var(--accent);
+}
+.item-delete {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-faded);
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.item-delete:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.add-button {
+  background: var(--bg-mid);
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+.add-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* MOMENTUM DIE */
+.escalation {
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-mid));
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.escalation-label {
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+.escalation-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.escalation-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--flame);
+  min-width: 50px;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(255,107,53,0.6);
+}
+
+/* DICE ROLLER (bottom fixed) */
+.dice-roller {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, var(--bg-darkest), var(--bg-dark));
+  border-top: 2px solid var(--primary);
+  padding: 12px 16px;
+  z-index: 90;
+  box-shadow: 0 -8px 20px rgba(0,0,0,0.6);
+}
+.dice-result-area {
+  text-align: center;
+  margin-bottom: 8px;
+  min-height: 40px;
+}
+.dice-result-context {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.dice-result-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--flame);
+  line-height: 1;
+}
+.dice-result-detail {
+  font-size: 11px;
+  color: var(--text-faded);
+  margin-top: 2px;
+}
+.dice-result-value.crit {
+  color: var(--success);
+  animation: flash 0.5s;
+}
+.dice-result-value.fumble {
+  color: var(--danger);
+  animation: shake 0.3s;
+}
+@keyframes flash {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); text-shadow: 0 0 30px var(--success); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+.dice-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.dice-toggle {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.dice-toggle.active {
+  background: var(--accent);
+  color: var(--bg-darkest);
+  border-color: var(--accent);
+  font-weight: bold;
+}
+.adv-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.adv-stepper.active { border-color: var(--accent); }
+.adv-stepper .step-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text);
+  min-width: 46px;
+  text-align: center;
+}
+.adv-stepper .step-label b { color: var(--accent); }
+.step-btn {
+  background: var(--bg-darkest);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
+}
+.step-btn:hover { border-color: var(--accent); }
+.dice-roll-btn {
+  background: linear-gradient(135deg, var(--flame), var(--primary));
+  border: none;
+  color: var(--bg-darkest);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.dice-roll-btn:active {
+  transform: scale(0.95);
+}
+
+/* MENU OVERLAY */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.show { display: flex; }
+.overlay-content {
+  background: var(--bg-dark);
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.overlay-title {
+  color: var(--accent);
+  font-size: 18px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.menu-btn {
+  display: block;
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px;
+  margin-bottom: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.menu-btn:hover { background: var(--bg-mid); border-color: var(--accent); }
+
+/* VERSATILE TRIGGER */
+.trigger-display {
+  background: linear-gradient(135deg, var(--bg-card), rgba(212,160,23,0.1));
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 10px;
+}
+.trigger-display label {
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 4px;
+}
+.trigger-display select, .trigger-display input, .trigger-display textarea {
+  background: var(--bg-darkest);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px;
+  border-radius: 3px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+/* DEATH SAVE */
+.death-save {
+  display: none;
+  background: linear-gradient(135deg, var(--bg-card), rgba(196,30,58,0.3));
+  border: 2px solid var(--danger);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
+  text-align: center;
+}
+.death-save.show { display: block; }
+.death-save h3 {
+  color: var(--danger);
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* QUICK REFERENCE */
+.quick-ref {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.quick-ref strong { color: var(--accent); }
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-dark);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* COIN */
+.coin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.coin-row input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 3px;
+  width: 80px;
+  text-align: center;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* ---- WIDE-SCREEN LAYOUT ---- */
+@media (min-width: 1100px){
+  .app{max-width:1500px;padding:0 24px;column-count:2;column-gap:28px}
+  .app > *{break-inside:avoid}
+  .app > *:not(.section){column-span:all}
+}
+@media (min-width: 1750px){
+  .app{max-width:2000px;column-count:3}
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-title">💪 Biceps & Brimstone</div>
+    <div class="topbar-buttons">
+      <button class="btn" onclick="toggleTheme()" id="theme-toggle" title="Toggle theme">🌙</button>
+      <button class="btn" onclick="newCharacter()">✦ New</button>
+      <button class="btn" onclick="showPreGens()">📜 Pre-Gens</button>
+      <button class="btn btn-primary" onclick="saveChar()">💾 Save</button>
+      <button class="btn" onclick="showMenu()">☰</button>
+    </div>
+  </div>
+
+  <!-- TITLE -->
+  <div class="title-block">
+    <div class="title-main">BICEPS &amp; BRIMSTONE</div>
+    <div class="title-sub">⚔ Steel · Sorcery · &amp; Badassery ⚔</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar" id="tab-bar">
+    <button class="tab-btn active" data-tab="character" onclick="switchTab('character')">Character</button>
+    <button class="tab-btn" data-tab="combat" onclick="switchTab('combat')">Combat</button>
+    <button class="tab-btn" data-tab="inventory" onclick="switchTab('inventory')">Inventory</button>
+    <button class="tab-btn" data-tab="magic" onclick="switchTab('magic')">Magic</button>
+    <button class="tab-btn" data-tab="codex" onclick="switchTab('codex')">Codex</button>
+  </div>
+
+
+  <!-- ============================================= -->
+  <!-- CHARACTER TAB                                  -->
+  <!-- ============================================= -->
+  <div class="tab-panel active" data-panel="character">
+  <!-- CHARACTER HEADER -->
+  <div class="char-header">
+    <div class="char-header-grid" style="grid-template-columns: 1fr 70px 92px;">
+      <div class="field">
+        <label>Character Name</label>
+        <input type="text" id="char-name" placeholder="Conan the Cimmerian">
+      </div>
+      <div class="field field-level">
+        <label>Level</label>
+        <input type="number" id="char-level" min="1" max="12" value="1" oninput="updateTierBox(); updateClassDC(); updateGritResolve(); if (typeof renderCombatScoresMirror === 'function') renderCombatScoresMirror();">
+      </div>
+      <div class="field field-level" title="Tier drives everything: pool size & die, weapon dice ×, cantrip die, growth lines (T2/T3/T4 switch on automatically)">
+        <label>Tier</label>
+        <div id="tier-box" style="background:var(--bg-card);border:1px solid var(--accent);border-radius:4px;padding:6px 4px;text-align:center;font-weight:bold;color:var(--accent);font-size:15px;letter-spacing:0.5px;">T1 <span style="font-size:10px;font-weight:normal;color:var(--text-faded);">· 3×d6</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+      <div class="field">
+        <label>XP <span id="xp-progress-hint" style="color:var(--accent);font-weight:normal;text-transform:none;letter-spacing:0;font-size:9px;"></span></label>
+        <input type="number" id="char-xp" min="0" value="0" onchange="updateXP()">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:3px;min-height:32px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text);text-transform:none;letter-spacing:0;margin:0;">
+            <input type="checkbox" id="char-encumbered" style="width:16px;height:16px;cursor:pointer;accent-color:var(--flame);">
+            <span id="encumbered-label">⚖ Encumbered</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="char-row">
+      <div class="field">
+        <label>Ancestry</label>
+        <select id="char-ancestry">
+          <option value="">— Select —</option>
+          <optgroup label="Civilization (Human variants)">
+            <option>Northron</option>
+            <option>Southron</option>
+            <option>Easterling</option>
+            <option>Westlander</option>
+          </optgroup>
+          <optgroup label="Beastkin">
+            <option>Panthari</option>
+            <option>Saruki</option>
+            <option>Kakari</option>
+            <option>Behemoth</option>
+            <option>Taurok</option>
+            <option>Varg</option>
+          </optgroup>
+          <optgroup label="Folk">
+            <option>Altuari</option>
+            <option>Kithling</option>
+            <option>Dwerg</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field">
+        <label>Class</label>
+        <select id="char-class" onchange="updateClass()">
+          <option value="">— Select —</option>
+          <option>Fighter</option>
+          <option>Rogue</option>
+          <option>Barbarian</option>
+          <option>Ranger</option>
+          <option>Monk</option>
+          <option>Wizard</option>
+          <option>Cleric</option>
+          <option>Bard</option>
+          <option>Druid</option>
+                        <option>Maleficar</option>
+        </select>
+      </div>
+    </div>
+    <div class="char-row" style="margin-top:6px;">
+      <div class="field" style="flex:1.5;">
+        <label>Subclass <span style="color:var(--text-faded);font-weight:normal;text-transform:none;letter-spacing:0;font-size:9px;">(L3+)</span></label>
+        <select id="char-subclass">
+          <option value="">— Select Class First —</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;">
+        <label>Order/Element/Tradition <span style="color:var(--text-faded);font-weight:normal;text-transform:none;letter-spacing:0;font-size:9px;">(specifics)</span></label>
+        <input type="text" id="char-tradition" placeholder="e.g. Way of Fire, Champion school" style="font-size:12px;">
+      </div>
+    </div>
+    <div class="char-row" style="margin-top:6px;">
+      <div class="field">
+        <label>Background 1 <span id="bg1-required-hint" style="color:var(--accent);font-weight:normal;text-transform:none;letter-spacing:0;font-size:9px;"></span></label>
+        <select id="char-bg1">
+          <option value="">— Select Background —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Background 2</label>
+        <select id="char-bg2">
+          <option value="">— Select Background —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABILITY SCORES -->
+  <div class="section">
+    <div class="section-title">Ability Scores (Tap to Roll)</div>
+    <div class="abilities-grid">
+      <div class="ability" data-ability="STR" onclick="rollAbility('STR')">
+        <div class="ability-name">Might</div>
+        <div class="ability-mod" id="mod-STR">+0</div>
+        <div class="ability-score"><input type="number" id="score-STR" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-STR">Weakened</div>
+      </div>
+      <div class="ability" data-ability="DEX" onclick="rollAbility('DEX')">
+        <div class="ability-name">Agility</div>
+        <div class="ability-mod" id="mod-DEX">+0</div>
+        <div class="ability-score"><input type="number" id="score-DEX" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-DEX">Sluggish</div>
+      </div>
+      <div class="ability" data-ability="CON" onclick="rollAbility('CON')">
+        <div class="ability-name">Fortitude</div>
+        <div class="ability-mod" id="mod-CON">+0</div>
+        <div class="ability-score"><input type="number" id="score-CON" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-CON">Sickened</div>
+      </div>
+      <div class="ability" data-ability="INT" onclick="rollAbility('INT')">
+        <div class="ability-name">Cunning</div>
+        <div class="ability-mod" id="mod-INT">+0</div>
+        <div class="ability-score"><input type="number" id="score-INT" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-INT">Confused</div>
+      </div>
+      <div class="ability" data-ability="WIS" onclick="rollAbility('WIS')">
+        <div class="ability-name">Focus</div>
+        <div class="ability-mod" id="mod-WIS">+0</div>
+        <div class="ability-score"><input type="number" id="score-WIS" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-WIS">Dazed</div>
+      </div>
+      <div class="ability" data-ability="CHA" onclick="rollAbility('CHA')">
+        <div class="ability-name">Presence</div>
+        <div class="ability-mod" id="mod-CHA">+0</div>
+        <div class="ability-score"><input type="number" id="score-CHA" value="10" min="1" max="20" onclick="event.stopPropagation()" oninput="updateMods()"></div>
+        <div class="ability-condition-name" id="cond-CHA">Shaken</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--text-faded);text-align:center;margin-top:8px;font-style:italic;">
+      Raises (+1 each even level, split as you choose): Grit <input type="number" id="grit-raise" value="0" min="0" max="6" style="width:34px;" oninput="updateGritResolve()"> · Resolve <input type="number" id="resolve-raise" value="0" min="0" max="6" style="width:34px;" oninput="updateGritResolve()"><br>
+      Derived: <span id="grit-display" onclick="rollGrit()" style="cursor:pointer;text-decoration:underline dotted;" title="Tap to roll Grit check (vs poison, disease, exhaustion, sustained physical effects)">Grit +0</span> · <span id="resolve-display" onclick="rollResolve()" style="cursor:pointer;text-decoration:underline dotted;" title="Tap to roll Resolve check (vs fear, charm, madness, compulsion, illusion)">Resolve +0</span>
+    </div>
+  </div>
+
+  <!-- SKILLS -->
+  <div class="section">
+    <div class="section-title">Skills</div>
+    <div style="font-size:11px;color:var(--text-faded);margin-bottom:8px;">
+      Tap circle to mark trained. Tap skill name to roll. Untrained auto-adds disadvantage. Use the +/− Adv/Dis steppers on the roller for other sources — they net 1-for-1, and each net source adds a d20 (2d20, 3d20, …).
+    </div>
+    <div id="skills-grid"></div>
+    <button class="btn" style="margin-top:10px;font-size:11px;" onclick="addCustomSkill()">+ Add Custom Skill</button>
+  </div>
+
+  <!-- CLASS FEATURES -->
+  <div class="section">
+    <div class="section-title">Class Features</div>
+    <textarea class="textarea-field" id="class-features" placeholder="List features by level (subclass, signature spell, momentum, etc.)" style="min-height:100px;"></textarea>
+  </div>
+
+  <!-- ANCESTRY TRAITS -->
+  <div class="section">
+    <div class="section-title">Ancestry Traits & Notes</div>
+    <textarea class="textarea-field" id="ancestry-traits" placeholder="Special abilities, traits, lore..."></textarea>
+  </div>
+
+  <!-- BOAST / BURDEN / EPITHET (L7) -->
+  <div class="section">
+    <div class="section-title">Boast, Burden &amp; Epithet</div>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:11px;color:var(--text-dim);margin-bottom:8px;">
+      <div style="color:var(--accent);font-weight:bold;margin-bottom:4px;">📜 Roleplay Anchors</div>
+      <div style="line-height:1.6;">
+        These three declarations shape your character in play. Each "yes" at end of session = <strong style="color:var(--flame)">+10 XP</strong> (max 50 XP from roleplay/session).
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="field">
+        <label>💪 Boast — A great deed or thing you're proud of</label>
+        <textarea class="textarea-field" id="char-boast" placeholder="e.g., I slew the dragon Voraxoth at fifteen / I have the finest hair in the kingdom / I once outdrank a dwarven lord" style="min-height:55px;"></textarea>
+      </div>
+      <div class="field">
+        <label>⛓ Burden — A flaw, curse, scar, or unfortunate circumstance</label>
+        <textarea class="textarea-field" id="char-burden" placeholder="e.g., My family was murdered by the Crimson Order / I owe the wrong guild a debt / I cannot tell a lie" style="min-height:55px;"></textarea>
+      </div>
+      <div class="field">
+        <label>✦ THE EPITHET (earned at L7) — the world names you; singular, and true</label>
+        <textarea class="textarea-field" id="char-unique" placeholder="e.g., Zathra the Grey / the Thrice-Scarred / the Last of the Reaver Wars — blank until L7; a Boast is claimed, the Epithet is confirmed" style="min-height:55px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /character panel -->
+
+  <!-- ============================================= -->
+  <!-- COMBAT TAB                                     -->
+  <!-- ============================================= -->
+  <div class="tab-panel" data-panel="combat">
+  <!-- ABILITY SCORES (mirror) -->
+  <div class="section" id="abilities-combat-mirror">
+    <div class="section-title">Ability Scores (Tap to Roll)</div>
+    <div class="abilities-grid" id="scores-grid-combat"></div>
+  </div>
+
+  <!-- COMBAT STATS -->
+  <div class="section">
+    <div class="section-title">Combat</div>
+    <div class="combat-grid">
+      <!-- HP -->
+      <div class="stat-box">
+        <div class="stat-box-title">Hit Points</div>
+        <div class="stat-tracker">
+          <button class="tracker-btn" onclick="adjustHP(-1)">−</button>
+          <div class="tracker-value">
+            <input type="number" id="hp-current" value="10" onchange="checkDeath()">
+          </div>
+          <button class="tracker-btn" onclick="adjustHP(1)">+</button>
+        </div>
+        <div class="stat-row">
+          <span>Max:</span>
+          <input type="number" id="hp-max" value="10" oninput="updateHPSuggestion()">
+        </div>
+        <div class="stat-row">
+          <span>Temp:</span>
+          <input type="number" id="hp-temp" value="0">
+        </div>
+        <div id="hp-suggest" style="font-size:10px;color:var(--text-faded);margin-top:4px;display:none;">
+          <span id="hp-suggest-text"></span>
+          <button class="btn" style="font-size:9px;padding:1px 5px;margin-left:4px;" onclick="applyHPSuggestion()">Apply</button>
+        </div>
+        <div class="death-save" id="death-save">
+          <h3>⚠ Death's Door</h3>
+          <button class="btn btn-flame" onclick="rollDeathSave()">Roll Death Save (d20)</button>
+          <div style="font-size:10px; margin-top:6px; color:var(--text-dim);">10+ = Stable | 9- = Scar or Death</div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;">
+          <span style="color:var(--text-faded);">Death Save Failures:</span>
+          <div style="display:flex;gap:6px;">
+            <div class="bubble death-bubble" data-idx="0" onclick="toggleDeathFail(0)" title="1st failure → Scar"></div>
+            <div class="bubble death-bubble" data-idx="1" onclick="toggleDeathFail(1)" title="2nd failure → Scar"></div>
+            <div class="bubble death-bubble" data-idx="2" onclick="toggleDeathFail(2)" title="3rd failure → Scar"></div>
+            <div class="bubble death-bubble" data-idx="3" onclick="toggleDeathFail(3)" title="4th failure → DEATH" style="border-color:var(--danger);"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Recoveries -->
+      <div class="stat-box">
+        <div class="stat-box-title">Recoveries</div>
+        <div class="stat-tracker">
+          <button class="tracker-btn" onclick="adjustRecov(-1)">−</button>
+          <div class="tracker-value">
+            <input type="number" id="recov-current" value="4">
+          </div>
+          <button class="tracker-btn" onclick="adjustRecov(1)">+</button>
+        </div>
+        <div class="stat-row">
+          <span>Max:</span>
+          <input type="number" id="recov-max" value="4">
+        </div>
+        <div style="font-size:10px;color:var(--text-faded);margin-top:6px;">
+          Max = Fortitude mod (L1-3), +1 (L4-6), +2 (L7-9), +3 (L10-12). Spend to heal: roll class die + Fortitude, or remove 1 condition.
+        </div>
+        <button class="btn btn-flame" style="margin-top:8px;width:100%;" onclick="spendRecovery()">⚡ Spend Recovery</button>
+      </div>
+    </div>
+
+    <div class="combat-stats-4">
+      <div class="mini-stat clickable" onclick="rollInit()">
+        <div class="mini-stat-label">Init</div>
+        <div class="mini-stat-value" id="display-init">+0</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-label">AC</div>
+        <div class="mini-stat-value"><input type="number" id="ac" value="10" oninput="this.dataset.manualOverride='1'" title="Auto-syncs with armor/Shatter. Edit to override (tap Apply ↑ to re-sync)."></div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-label">Speed</div>
+        <div class="mini-stat-value"><input type="number" id="speed" value="30"></div>
+      </div>
+      <div class="mini-stat clickable" onclick="cycleEscalation()">
+        <div class="mini-stat-label">Momentum</div>
+        <div class="mini-stat-value" id="escalation">+0</div>
+      </div>
+      <div class="mini-stat" title="Class DC = base by level (12 at L1-2, 13 at L3-4, 15 at L5-6, 17 at L7-8, 18 at L9-10, 20 at L11-12) + primary ability modifier. Used for spell saves and Muscle Move riders.">
+        <div class="mini-stat-label">Class DC</div>
+        <div class="mini-stat-value" id="display-class-dc">12</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERMANENT SCARS -->
+  <div class="section">
+    <div class="section-title">⚔ Permanent Scars</div>
+    <div style="font-size:11px;color:var(--text-faded);margin-bottom:8px;line-height:1.5;">
+      Scars are earned by failing Death Saves (failed roll auto-adds a random scar) or assigned by the GM. Each scar is a lasting mark — usually impossible to remove without rare magic or a heroic quest.
+    </div>
+    <div id="scars-list"></div>
+    <button class="btn" style="margin-top:8px;font-size:11px;" onclick="addScarManual()">+ Add Scar</button>
+  </div>
+
+  <!-- AFFLICTIONS (mental wounds — Madness track) -->
+  <div class="section">
+    <div class="section-title">🜲 Afflictions <span id="affliction-count-display" style="font-size:11px;color:var(--text-faded);font-weight:normal;letter-spacing:0;text-transform:none;margin-left:8px;">0 / 6</span></div>
+    <div style="font-size:11px;color:var(--text-faded);margin-bottom:8px;line-height:1.5;">
+      Afflictions are earned by failing Resolve checks against Madness sources (eldritch horrors, Black Magic, forbidden knowledge, the unbearable witnessed). They are the mind's analog of Permanent Scars. <strong>At 6 Afflictions the next failure makes the character <span style="color:var(--danger);">Lost</span></strong> — removed from play, retired narratively. Sanity Vigil can attempt to remove one.
+    </div>
+    <div id="afflictions-list"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+      <button class="btn" style="font-size:11px;" onclick="addAfflictionManual()">+ Add Affliction</button>
+      <button class="btn btn-flame" style="font-size:11px;" onclick="rollMadnessCheck()">Roll Madness Check</button>
+      <div id="lost-indicator" style="display:none;color:var(--danger);font-weight:bold;font-size:12px;margin-left:auto;">⚠ LOST — character retired</div>
+    </div>
+  </div>
+
+  <!-- CONDITIONS -->
+  <div class="section">
+    <div class="section-title">Conditions (Tap to Toggle)</div>
+    <div class="conditions-grid">
+      <div class="condition-card" data-cond="STR" onclick="toggleCondition('STR')">
+        <div class="condition-card-name">Weakened</div>
+        <div class="condition-card-desc">Disadvantage on Might</div>
+      </div>
+      <div class="condition-card" data-cond="DEX" onclick="toggleCondition('DEX')">
+        <div class="condition-card-name">Sluggish</div>
+        <div class="condition-card-desc">Disadvantage on Agility</div>
+      </div>
+      <div class="condition-card" data-cond="CON" onclick="toggleCondition('CON')">
+        <div class="condition-card-name">Sickened</div>
+        <div class="condition-card-desc">Disadvantage on Fortitude</div>
+      </div>
+      <div class="condition-card" data-cond="INT" onclick="toggleCondition('INT')">
+        <div class="condition-card-name">Confused</div>
+        <div class="condition-card-desc">Disadvantage on Cunning</div>
+      </div>
+      <div class="condition-card" data-cond="WIS" onclick="toggleCondition('WIS')">
+        <div class="condition-card-name">Dazed</div>
+        <div class="condition-card-desc">Disadvantage on Focus</div>
+      </div>
+      <div class="condition-card" data-cond="CHA" onclick="toggleCondition('CHA')">
+        <div class="condition-card-name">Shaken</div>
+        <div class="condition-card-desc">Disadvantage on Presence</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PER-R&R TOGGLES -->
+  <div class="section">
+    <div class="section-title">Per-R&R Resources</div>
+    <label class="toggle-box" title="A focused trial that removes one failed death save. Cannot remove the fourth (death) failure. Cannot heal Permanent Scars.">
+      <input type="checkbox" id="vigil-in-progress">
+      <span><strong>Vigil In Progress</strong><br><small>Pilgrimage / Reckoning / Sacrifice — see rulebook §10 for trial details. Class- and ancestry-specific Per-R&R abilities (Second Wind, Lay on Hands, Refuse to Die, etc.) belong in Class & Ancestry Features.</small></span>
+    </label>
+  </div>
+
+  <!-- REACTION TRACKER (per-round, not per-R&R) -->
+  <div class="section">
+    <div class="section-title">This Round</div>
+    <label class="toggle-box" title="You have ONE Reaction per round. Hard limit. Used by Parry, Block, Evade/Acrobatics, Witchstep, Shield spell, Catch the Strike, Attack of Opportunity. Reset this each round.">
+      <input type="checkbox" id="reaction-used">
+      <span><strong>Reaction Used</strong><br><small>1 per round (Parry / Block / Evade / Witchstep / Shield / Catch / AoO) — tap to reset at start of each round</small></span>
+    </label>
+  </div>
+
+  <!-- WEAPONS -->
+  <div class="section">
+    <div class="section-title">Weapons (Tap to Attack)</div>
+    <div class="item-list" id="weapons-list"></div>
+    <button class="add-button" onclick="addWeapon()">+ Add Weapon</button>
+  </div>
+
+  <!-- ARMOR & SHATTER -->
+  <div class="section">
+    <div class="section-title">Armor & Shatter</div>
+    <div class="stat-box">
+      <div style="display:grid;grid-template-columns:1.3fr 0.7fr 1fr;gap:8px;">
+        <div class="field">
+          <label>Armor Type</label>
+          <select id="armor-select" onchange="updateShatterUI();updateAC()">
+            <option value="">— None (AC 10 + Agility) —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quality</label>
+          <select id="armor-quality" onchange="updateShatterUI();updateAC()">
+            <option value="Low">Crude (−1)</option>
+            <option value="Standard" selected>Standard</option>
+            <option value="Masterwork">Mastercraft (+1)</option>
+            <option value="Legendary">Legendary (+2)</option>
+            <option value="Magic">Magic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Shield (+2 AC)</label>
+          <select id="shield-select" onchange="updateShatterUI();updateAC()">
+            <option value="0">No Shield</option>
+            <option value="2">Shield</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;font-size:12px;">
+        <span style="color:var(--text-faded)">Calculated AC:</span>
+        <span id="calculated-ac" style="font-size:20px;font-weight:900;color:var(--flame)">10</span>
+        <span style="color:var(--text-faded);font-size:11px;" id="ac-formula">10 + Agility</span>
+        <button class="btn" style="margin-left:auto;font-size:10px;padding:3px 6px;" onclick="applyCalculatedAC()" title="Re-sync AC field above with this calculated value (clears manual override)">↑ Sync</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-faded);">
+        <em>Auto-calc factors armor, quality, shield, and the Agility cap (plus the Monk's unarmored AC). Manual override always possible in the AC box above.</em>
+      </div>
+
+      <!-- SHATTER TRACKER -->
+      <div id="shatter-tracker" style="margin-top:12px;padding:10px;background:rgba(196,30,58,0.08);border:1px solid var(--border);border-radius:6px;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div style="font-size:12px;font-weight:bold;color:var(--accent);letter-spacing:1px;">🛡 SHATTER — sacrifice to negate one attack</div>
+          <div style="font-size:10px;color:var(--text-faded);">reaction · item destroyed</div>
+        </div>
+
+        <!-- Shatter rule note -->
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.4;">
+          As a reaction, sacrifice a held <strong>shield or weapon — or the armor you're wearing</strong> (v104) — to <strong>negate one attack entirely</strong>. The item is destroyed (armor: wrecked — unarmored AC until replaced). Optionally roll the Die of Fate for a chance to keep it (or lose everything).
+        </div>
+
+        <!-- Shield Used Track -->
+        <div id="shield-shatter-row" style="margin-bottom:8px;display:none;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);margin-bottom:4px;">
+            <span>Shield:</span>
+            <span id="shield-state" style="color:var(--text-faded);">Intact</span>
+          </div>
+          <button class="btn" id="shield-shatter-btn" onclick="useShield()" style="font-size:10px;padding:4px 8px;">Use Shield (Destroy)</button>
+          <button class="btn" id="armor-shatter-btn" onclick="shatterArmor()" style="font-size:10px;padding:4px 8px;">Shatter Armor (Wreck)</button>
+          <button class="btn" id="shield-restore-btn" onclick="restoreShield()" style="font-size:10px;padding:4px 8px;display:none;">Restore Shield</button>
+        </div>
+
+        <!-- Die of Fate -->
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <button class="btn" onclick="rollDieOfFate()" style="font-size:11px;padding:5px 10px;">🎲 Roll Die of Fate</button>
+          <div id="fate-result" style="font-size:12px;font-weight:bold;display:none;flex:1;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MUSCLE/MAGICK DICE -->
+  <div class="section">
+    <div class="section-title" id="primary-dice-title">Muscle / Magick Dice</div>
+    <div class="stat-box">
+      <div class="dice-display">
+        <span class="dice-count" id="md-display">3</span>
+        <span class="dice-size" id="md-size">d6</span>
+        <span style="color:var(--text-faded);font-size:11px;">Recharge: Breather</span>
+      </div>
+      <div class="bubbles" id="md-bubbles"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="btn btn-flame" style="flex:1;" onclick="rollMuscleDie()">🎲 Roll Die</button>
+        <button class="btn" onclick="resetMuscleDice()">↻ Breather</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADASSERY DICE -->
+  <div class="section">
+    <div class="section-title">💥 Badassery Dice (Meta-Currency)</div>
+    <div class="stat-box">
+      <div class="dice-display">
+        <span class="dice-count" id="ba-display">0</span>
+        <span class="dice-size" id="ba-size">d6</span>
+        <span style="color:var(--text-faded);font-size:11px;">Max 3 • Earned by being badass</span>
+      </div>
+      <div class="bubbles" id="ba-bubbles"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="btn btn-flame" style="flex:1;" onclick="rollBadasseryDie()">🎲 Spend &amp; Roll</button>
+        <button class="btn" onclick="addBadasseryDie()" title="Earned a Badassery die!">+ Earn</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-faded);">
+        <em>Add die to a failed d20 roll. Carries over between sessions. Spend up to 3 on one roll if desperate.</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAGA DICE -->
+  <div class="section">
+    <div class="section-title">🤝 Saga Dice (Team-Ups)</div>
+    <div class="stat-box">
+      <div class="dice-display">
+        <span class="dice-count" id="saga-display">0</span>
+        <span class="dice-size" id="saga-size">d6</span>
+        <span style="color:var(--text-faded);font-size:11px;">Max 3 • Gifted by fellow players (1/session each)</span>
+      </div>
+      <div class="bubbles" id="saga-bubbles"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="btn btn-flame" style="flex:1;" onclick="rollSagaDie()">🎲 Team-Up!</button>
+        <button class="btn" onclick="addSagaDie()" title="Gifted a Saga die">+ Gifted</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-faded);">
+        Spend on your turn: one combined move with a willing ally — one roll w/ advantage by the payload-bearer; the Saga die rides the to-hit and always counts as Spillover (even on Cautious/Defensive moves; adds to effect if non-damage). Ally's part costs their reaction unless a 2nd Saga die is spent — which buys another die on the beat OR negates a Greater Foe's Inevitable Reaction. Bank unspent as XP at session's end.
+      </div>
+    </div>
+  </div>
+
+  <!-- COMBAT TRIGGERS -->
+  <div class="section" id="versatile-section">
+    <div class="section-title">Combat Triggers (Martials)</div>
+    <div id="armed-trigger-banner" style="display:none;border:2px solid var(--accent);border-radius:6px;padding:8px 10px;margin-bottom:8px;background:var(--bg-card);">
+      <div style="font-size:9px;letter-spacing:1.5px;color:var(--accent);font-weight:bold;">⚡ ARMED THIS R&amp;R — WATCH FOR:</div>
+      <div id="armed-trigger-line" style="font-size:14px;font-weight:bold;margin-top:2px;"></div>
+      <div id="armed-trigger-fx" style="font-size:11px;color:var(--text-faded);margin-top:2px;"></div>
+    </div>
+    <div class="trigger-display">
+      <label>Active Trigger (Pick 1 per R&R — base paths arm 2)</label>
+      <input type="text" id="trigger-name" placeholder="Trigger name" oninput="updateTriggerBanner()">
+      <input type="text" id="trigger-when" placeholder="When (e.g., even hit, 18+ hit, odd miss)" oninput="updateTriggerBanner()">
+      <textarea id="trigger-effect" placeholder="Effect" style="min-height:50px;" oninput="updateTriggerBanner()"></textarea>
+    </div>
+  </div>
+
+  </div><!-- /combat panel -->
+
+  <!-- ============================================= -->
+  <!-- INVENTORY TAB                                  -->
+  <!-- ============================================= -->
+  <div class="tab-panel" data-panel="inventory">
+  <!-- WEAPONS (mirror — same list as Combat tab) -->
+  <div class="section">
+    <div class="section-title">Weapons (shared with Combat tab)</div>
+    <div style="font-size:11px;color:var(--text-faded);margin-bottom:8px;">Weapons listed here appear on the Combat tab and vice versa.</div>
+    <div id="weapons-list-mirror"></div>
+  </div>
+
+  <!-- TORCH / LIGHT TRACKER -->
+  <div class="section">
+    <div class="section-title">🕯️ Light Source (Real-Time)</div>
+    <div class="stat-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div class="field">
+          <label>Active Light</label>
+          <select id="light-type">
+            <option value="">— None (in darkness) —</option>
+            <option value="30">Makeshift Torch (30 min)</option>
+            <option value="60">Standard Torch (1 hour)</option>
+            <option value="90">Mastercraft Torch (90 min)</option>
+            <option value="360">Lantern w/ Oil (6 hours)</option>
+            <option value="0">Light Spell (active)</option>
+            <option value="0">Other / Magical</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time Remaining</label>
+          <div style="display:flex;align-items:center;gap:6px;font-size:18px;font-weight:bold;color:var(--flame);padding:6px 0;">
+            <span id="torch-remaining">—</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-flame" style="flex:1;" onclick="lightTorch()">🔥 Light Torch</button>
+        <button class="btn" onclick="extinguishTorch()">💨 Extinguish</button>
+      </div>
+      <div style="margin-top:6px;font-size:10px;color:var(--text-faded);">
+        <em>Light radius: 10ft (adjacent squares only). One hand required to hold torch.</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- COIN & SUPPLIES -->
+  <div class="section">
+    <div class="section-title">💰 Coin & Supplies</div>
+    <div class="coin-row" style="margin-bottom:10px;">
+      <label style="color:var(--accent);">💰 Total Coin:</label>
+      <input type="number" id="coin" value="0">
+      <span style="color:var(--text-faded);font-size:10px;">1=cheap | 10=med | 100=premium | 1000=expensive</span>
+    </div>
+    <div class="coin-row">
+      <label style="color:var(--accent);">🛠 Supplies:</label>
+      <input type="number" id="supplies" value="0" min="0">
+      <span style="color:var(--text-faded);font-size:10px;">Crafting resource (1 lb each, 5c/unit). Used for repairs &amp; crafting.</span>
+    </div>
+  </div>
+
+  <!-- WORN / CARRIED -->
+  <div class="section">
+    <div class="section-title">⚔ Worn / Carried</div>
+    <div style="font-size:10px;color:var(--text-faded);margin-bottom:8px;line-height:1.4;">
+      On your person — armor worn, weapons sheathed or held, items in pouches or pockets. <strong>Reachable in a turn.</strong> Drawing or stowing usually free or as part of an action.
+    </div>
+    <div class="item-list" id="worn-list"></div>
+    <button class="add-button" onclick="addWornItem()">+ Add Item to Worn / Carried</button>
+  </div>
+
+  <!-- IN PACK -->
+  <div class="section">
+    <div class="section-title">🎒 In Pack / Backpack</div>
+    <div style="font-size:10px;color:var(--text-faded);margin-bottom:8px;line-height:1.4;">
+      Inside your pack — rope, rations, bedroll, healer's kit, climbing gear. <strong>Setting the pack down to rummage takes a turn</strong> (or an action mid-combat). Drop the pack if you need to run.
+    </div>
+    <div class="item-list" id="pack-list"></div>
+    <button class="add-button" onclick="addPackItem()">+ Add Item to Pack</button>
+  </div>
+
+  <!-- STORED ELSEWHERE -->
+  <div class="section">
+    <div class="section-title">🏠 Stored Elsewhere</div>
+    <div style="font-size:10px;color:var(--text-faded);margin-bottom:8px;line-height:1.4;">
+      Not with you right now — at home, in a vault, at the inn, with a trusted friend, in a buried cache. <strong>Out of reach until you go get it.</strong>
+    </div>
+    <div class="item-list" id="stored-list"></div>
+    <button class="add-button" onclick="addStoredItem()">+ Add Stored Item</button>
+  </div>
+
+  <!-- MOUNTS / CARTS / FOLLOWERS -->
+  <div class="section">
+    <div class="section-title">🐴 Mounts / Carts / Followers</div>
+    <textarea class="textarea-field" id="inv-mounts" placeholder="What you have with you that isn't carried on your person — pack mule, cart with supplies, a hireling carrying your treasure, a horse, a war-dog..."></textarea>
+  </div>
+
+  </div><!-- /inventory panel -->
+
+  <!-- ============================================= -->
+  <!-- MAGIC TAB                                      -->
+  <!-- ============================================= -->
+  <div class="tab-panel" data-panel="magic">
+  <!-- NON-CASTER NOTE (shown when class has no magic) -->
+  <div class="section" id="non-caster-note" style="display:none;">
+    <div style="padding:16px;border:2px solid var(--border);background:var(--bg-card);border-radius:6px;color:var(--text-dim);font-size:13px;line-height:1.6;">
+      <strong style="color:var(--accent);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;">⚔ Halt, Peasant! ⚔</strong>
+      You clearly lack the spell slots to view this page. Please close this tab and return to your regularly scheduled sword-swinging, you uncultured brute.
+      <br><br>
+      <span style="color:var(--text-faded);font-size:11px;">(If you multiclass or learn from a scroll, spells will appear here.)</span>
+    </div>
+  </div>
+
+  <!-- SPELL SLOTS -->
+  <div class="section" id="spells-section" style="display:none;">
+    <div class="section-title">Known Spells & Casting</div>
+    <div id="prepared-spells-display" style="font-size:12px;color:var(--text);"></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text-faded);">
+      No spell slots, no prepare step (v104) — cast anything you KNOW from the Magick Dice pool (§8–9). Floors: ◆ Lesser 1 die · ◈ Greater 2 · ◉ Dire 3; growth lines switch on by tier; extra dice are pure magnitude. Picks at L2/3/4/6/7/9 — and spells are treasure: log what the world teaches you.
+    </div>
+    <textarea id="prepared-spells" placeholder="Spells you know (picks + discoveries)..." style="width:100%;min-height:60px;margin-top:6px;"></textarea>
+    <div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:bold;color:var(--text);margin-bottom:4px;">Cantrips Known</div>
+      <div style="font-size:10px;color:var(--text-faded);margin-bottom:6px;">
+        3 at L1, +1 at L5, +1 at L10. At-will, free. Damage cantrips deal one die, scaling d6→d12 by tier.
+      </div>
+      <textarea id="cantrips-known" placeholder="e.g. Larry's Luminescence, Fire Bolt, Mage Hand, Prestidigitation, Mending..." style="width:100%;min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <!-- MOVES & SPELLS -->
+  <div class="section">
+    <div class="section-title">Muscle Moves / Magick Tricks / Spells</div>
+    <div class="item-list" id="moves-list"></div>
+    <button class="add-button" onclick="addMove()">+ Add Move/Spell</button>
+  </div>
+
+  </div><!-- /magic panel -->
+
+  <!-- ============================================= -->
+  <!-- CODEX TAB                                      -->
+  <!-- ============================================= -->
+  <div class="tab-panel" data-panel="codex">
+  <!-- QUICK REFERENCE -->
+  <div class="section">
+    <div class="section-title">Quick Reference</div>
+    <div class="quick-ref">
+      <strong>• Natural 20</strong> = Crit (double damage dice) | <strong>Natural 1</strong> = Auto-fail<br>
+      <strong>• Recovery Value</strong> = ½ Max HP (heal OR remove 1 condition)<br>
+      <strong>• Breather</strong> (5 min): regain dice, spend recoveries<br>
+      <strong>• R&R</strong> (8 hrs): Survival check, full restore on success<br>
+      <strong>• Reactions</strong>: 1 per round MAX<br>
+      <strong>• Greater Foes</strong>: AUTO-HIT (defend with reaction)<br>
+      <strong>• Auto-Success</strong>: Lvl 4 (DC 10) | Lvl 8 (DC 12) | Lvl 12 (DC 15)<br>
+      <strong>• Fixed DCs</strong>: 10/12/15/18/20
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="section">
+    <div class="section-title">Notes</div>
+    <textarea class="textarea-field" id="codex-notes" placeholder="Anything you want to remember — clues, theories, ideas, things to ask the GM..."></textarea>
+  </div>
+
+  <!-- QUESTS -->
+  <div class="section">
+    <div class="section-title">Quests</div>
+    <textarea class="textarea-field" id="codex-quests" placeholder="Quests, contracts, jobs, debts owed to or by you..."></textarea>
+  </div>
+
+  <!-- NPCs -->
+  <div class="section">
+    <div class="section-title">NPCs Met</div>
+    <textarea class="textarea-field" id="codex-npcs" placeholder="People you've met — name, where you met them, whether they like you..."></textarea>
+  </div>
+
+  <!-- LOCATIONS -->
+  <div class="section">
+    <div class="section-title">Locations</div>
+    <textarea class="textarea-field" id="codex-locations" placeholder="Places you've been, places you've heard about..."></textarea>
+  </div>
+
+  <!-- LORE -->
+  <div class="section">
+    <div class="section-title">Lore</div>
+    <textarea class="textarea-field" id="codex-lore" placeholder="Knowledge discovered through play — history, magic, mysteries..."></textarea>
+  </div>
+
+  </div><!-- /codex panel -->
+
+</div><!-- /app -->
+
+<!-- DICE ROLLER (fixed bottom) -->
+<div class="dice-roller">
+  <!-- TORCH INDICATOR (top-right corner) -->
+  <div class="torch-indicator" id="torch-indicator" onclick="goToTorch()" title="Light status — tap to manage on Inventory tab">
+    <span class="torch-icon" id="torch-icon">🕯️</span>
+    <span class="torch-text" id="torch-indicator-text">unlit</span>
+  </div>
+  <div class="dice-result-area">
+    <div class="dice-result-context" id="dice-context">Tap an ability, weapon, or skill to roll</div>
+    <div class="dice-result-value" id="dice-value">—</div>
+    <div class="dice-result-detail" id="dice-detail"></div>
+    <div id="spillover-result" style="font-size:11px;color:var(--flame);margin-top:2px;font-weight:bold;"></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--text-faded);">
+    <label>Target AC:</label>
+    <input type="number" id="target-ac" placeholder="—" style="width:50px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);text-align:center;padding:3px;border-radius:3px;font-family:inherit;font-size:13px;" onchange="recalcSpillover()">
+      <select id="stance-select" onchange="recalcSpillover()" title="Spillover is default (§6). Cautious/Defensive are keywords printed on specific moves." style="margin-left:6px;">
+        <option value="default">Default (Spillover)</option>
+        <option value="cautious">Cautious move (+mod, +1 hit)</option>
+        <option value="defensive">Defensive move (Graze)</option>
+      </select>
+    <span style="font-size:10px;color:var(--text-faded);">(optional — auto-calcs spillover)</span>
+  </div>
+  <div class="dice-controls">
+    <div class="adv-stepper" id="adv-stepper"><button class="step-btn" onclick="adjAdv('adv',-1)">−</button><span class="step-label">Adv <b id="adv-count">0</b></span><button class="step-btn" onclick="adjAdv('adv',1)">+</button></div>
+    <div class="adv-stepper" id="dis-stepper"><button class="step-btn" onclick="adjAdv('dis',-1)">−</button><span class="step-label">Dis <b id="dis-count">0</b></span><button class="step-btn" onclick="adjAdv('dis',1)">+</button></div>
+    <button class="dice-toggle" id="esc-toggle" onclick="toggleEsc()">+ Momentum</button>
+    <button class="dice-roll-btn" onclick="rollManual()">🎲 Roll d20</button>
+  </div>
+  <div id="net-readout" style="text-align:center;font-size:11px;color:var(--text-faded);margin-top:4px;letter-spacing:0.5px;">Straight roll</div>
+</div>
+
+<!-- MENU OVERLAY -->
+<div class="overlay" id="menu-overlay" onclick="if(event.target===this)closeMenu()">
+  <div class="overlay-content">
+    <div class="overlay-title">⚔ Menu</div>
+    <button class="menu-btn" onclick="saveChar();closeMenu()">💾 Save Character</button>
+    <button class="menu-btn" onclick="loadChar();closeMenu()">📂 Load Character</button>
+    <button class="menu-btn" onclick="exportJSON();closeMenu()">📤 Export JSON</button>
+    <button class="menu-btn" onclick="importJSON();closeMenu()">📥 Import JSON / Forge character</button>
+    <button class="menu-btn" onclick="newCharacter();closeMenu()">✦ New Character</button>
+    <button class="menu-btn" onclick="showPreGens();closeMenu()" style="border-color:var(--accent);color:var(--accent)">📜 Pre-Generated Characters</button>
+    <button class="menu-btn" onclick="if(confirm('Reset everything?')){resetAll();closeMenu()}" style="border-color:var(--danger);color:var(--danger)">🔥 Reset Sheet</button>
+    <button class="menu-btn" onclick="closeMenu()" style="margin-top:12px;">✕ Close</button>
+  </div>
+</div>
+
+<!-- PRE-GEN OVERLAY -->
+<div class="overlay" id="pregen-overlay" onclick="if(event.target===this)closePreGens()">
+  <div class="overlay-content">
+    <div class="overlay-title">📜 Pre-Generated Characters</div>
+    <div id="pregen-list"></div>
+    <button class="menu-btn" onclick="closePreGens()" style="margin-top:12px;">✕ Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =========================================
+// STATE
+// =========================================
+let state = {
+  advCount: 0,
+  disCount: 0,
+  autoDis: 0,   // contextual disadvantage from the roll itself (e.g. untrained skill)
+  useEsc: false,
+  escalation: 0,
+  conditions: {},
+  muscleDice: { available: 3, max: 3 },
+  spellSlots: {},
+  sagaDice: 0,
+  badasseryDice: 0,
+  activeTab: 'character',
+};
+
+// =========================================
+// TAB SWITCHING
+// =========================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.dataset.panel === name);
+  });
+  state.activeTab = name;
+  window.scrollTo(0, 0);
+}
+
+// =========================================
+// BACKGROUNDS DATA
+// =========================================
+const STANDARD_BACKGROUNDS = [
+  "Acolyte", "Alchemist", "Artisan", "Ascetic", "Bonesaws", "Charlatan", "Criminal", "Dojo",
+  "Entertainer", "Folk Hero", "Guild Artisan", "Investigator", "Merchant", "Noble",
+  "Outlander", "Sea Dog", "Sage", "Sailor", "Scholar", "Soldier", "Urchin"
+];
+
+const DRUID_BACKGROUNDS = [
+  "Fire Druid", "Water Druid", "Earth Druid", "Sky Druid", "Beastspeaker", "Green-Warden"
+];
+
+const CLASS_REQUIRED_BG = {
+  "Fighter": "Soldier",
+  "Rogue": "Criminal",
+  "Barbarian": "Outlander",
+  "Ranger": "Outlander",
+  "Monk": "Ascetic",
+  "Wizard": "Scholar",
+  "Cleric": "Acolyte",
+  "Bard": "Entertainer",
+  "Druid": null, // Druid requires one of the 6 element backgrounds
+  "Maleficar": null,  // canon per Forge v12 — no required background
+  "Awakened": null // Awakened is Altuari-only (ancestry), no required background
+};
+
+// =========================================
+// SKILLS DATA (the 34 canon skills)
+// =========================================
+// Each skill: { name, ability (default), category, weapon (bool), melee (bool, only for weapons) }
+// "ability" can be a string ("STR") or an array (["STR","DEX"]) for flex skills
+// Internal codes still STR/DEX/CON/INT/WIS/CHA — display labels are Might/Agility/Fortitude/Cunning/Focus/Presence
+const SKILL_CANON = [
+  // Weapon skills (13) — 10 melee + 3 ranged
+  { name: "Brawling",              ability: ["STR","DEX"], category: "Weapon", weapon: true, melee: true },
+  { name: "Swords & Blades",       ability: ["STR","DEX"], category: "Weapon", weapon: true, melee: true },
+  { name: "Knives & Daggers",      ability: "DEX",         category: "Weapon", weapon: true, melee: true },
+  { name: "Fencing Blades",        ability: "DEX",         category: "Weapon", weapon: true, melee: true },
+  { name: "Axes & Hammers",        ability: "STR",         category: "Weapon", weapon: true, melee: true },
+  { name: "Maces & Clubs",         ability: "STR",         category: "Weapon", weapon: true, melee: true },
+  { name: "Flexible Weapons",      ability: "DEX",         category: "Weapon", weapon: true, melee: true },
+  { name: "Polearms & Spears",     ability: "STR",         category: "Weapon", weapon: true, melee: true },
+  { name: "Staves & Rods",         ability: ["STR","DEX"], category: "Weapon", weapon: true, melee: true },
+  { name: "Shields",               ability: "STR",         category: "Weapon", weapon: true, melee: true },
+  { name: "Bows",                  ability: "DEX",         category: "Weapon", weapon: true, melee: false },
+  { name: "Crossbows & Firearms",  ability: "DEX",         category: "Weapon", weapon: true, melee: false },
+  { name: "Thrown Weapons & Slings", ability: ["STR","DEX"], category: "Weapon", weapon: true, melee: false },
+
+  // Physical (4) — Acrobatics includes Evade reaction
+  { name: "Athletics",             ability: "STR",         category: "Physical", weapon: false },
+  { name: "Acrobatics",            ability: "DEX",         category: "Physical", weapon: false },
+  { name: "Stealth",               ability: "DEX",         category: "Physical", weapon: false },
+  { name: "Sleight of Hand",       ability: "DEX",         category: "Physical", weapon: false },
+
+  // Social (5)
+  { name: "Persuasion",            ability: "CHA",         category: "Social", weapon: false },
+  { name: "Deception",             ability: "CHA",         category: "Social", weapon: false },
+  { name: "Intimidation",          ability: ["STR","CHA"], category: "Social", weapon: false },
+  { name: "Insight",               ability: "WIS",         category: "Social", weapon: false },
+  { name: "Performance",           ability: "CHA",         category: "Social", weapon: false },
+
+  // Knowledge / Perception (5)
+  { name: "Arcana",                ability: "INT",         category: "Knowledge", weapon: false },
+  { name: "Religion & Occultism",  ability: ["INT","WIS"], category: "Knowledge", weapon: false },
+  { name: "History & Lore",        ability: "INT",         category: "Knowledge", weapon: false },
+  { name: "Investigation",         ability: "INT",         category: "Knowledge", weapon: false },
+  { name: "Perception",            ability: "WIS",         category: "Knowledge", weapon: false },
+
+  // Outdoor / Travel (4)
+  { name: "Survival",              ability: "WIS",         category: "Outdoor", weapon: false },
+  { name: "Animal Handling",       ability: "WIS",         category: "Outdoor", weapon: false },
+  { name: "Riding",                ability: ["DEX","WIS"], category: "Outdoor", weapon: false },
+  { name: "Sailing & Navigation",  ability: ["INT","WIS"], category: "Outdoor", weapon: false },
+
+  // Trades & Craft (4) — Medicine moved to INT (Cunning) per v31 canon
+  { name: "Smithing & Repair",     ability: ["STR","INT"], category: "Trades", weapon: false },
+  { name: "Lockpicking & Mechanisms", ability: "DEX",      category: "Trades", weapon: false },
+  { name: "Medicine",              ability: "INT",         category: "Trades", weapon: false },
+  { name: "Potions & Alchemy",     ability: "INT",         category: "Trades", weapon: false },
+];
+
+const SKILL_CATEGORY_ORDER = ["Weapon", "Physical", "Social", "Knowledge", "Outdoor", "Trades"];
+const SKILL_CATEGORY_LABEL = {
+  "Weapon":    "Weapon Skills",
+  "Physical":  "Physical",
+  "Social":    "Social",
+  "Knowledge": "Knowledge & Perception",
+  "Outdoor":   "Outdoor & Travel",
+  "Trades":    "Trades & Craft",
+};
+
+// Skill state: per-skill { trained: bool }. Custom skills also include { name, ability, category, custom: true }
+state.skills = {};       // keyed by skill name → { trained: bool }
+state.customSkills = []; // array of { name, ability, category }
+
+// =========================================
+// SKILL RENDERING
+// =========================================
+function renderSkills() {
+  const grid = document.getElementById('skills-grid');
+  if (!grid) return;
+
+  const allSkills = [...SKILL_CANON, ...state.customSkills.map(s => ({...s, weapon: false, isCustom: true}))];
+
+  let html = '';
+  SKILL_CATEGORY_ORDER.forEach(cat => {
+    const skillsInCat = allSkills.filter(s => s.category === cat);
+    if (skillsInCat.length === 0) return;
+    html += `<div class="skill-cat-header">${SKILL_CATEGORY_LABEL[cat]}</div>`;
+    html += '<div class="skill-cat-grid">';
+    skillsInCat.forEach(s => {
+      const isTrained = state.skills[s.name]?.trained || false;
+      const abilityDisplay = Array.isArray(s.ability) ? s.ability.map(statName).join('/') : statName(s.ability);
+      html += `
+        <div class="skill-row ${isTrained ? 'trained' : ''}">
+          <div class="skill-circle ${isTrained ? 'on' : ''}" onclick="toggleSkillTrained('${s.name.replace(/'/g, "\\'")}')" title="${isTrained ? 'Trained — click to untrain' : 'Untrained — click to mark trained'}"></div>
+          <div class="skill-name" onclick="rollSkill('${s.name.replace(/'/g, "\\'")}')" title="Tap to roll ${s.name}">${s.name}</div>
+          <div class="skill-ability">${abilityDisplay}</div>
+          ${s.isCustom ? `<div class="skill-delete" onclick="deleteCustomSkill('${s.name.replace(/'/g, "\\'")}')" title="Remove this custom skill">×</div>` : ''}
+        </div>
+      `;
+    });
+    html += '</div>';
+  });
+
+  grid.innerHTML = html;
+}
+
+function toggleSkillTrained(skillName) {
+  if (!state.skills[skillName]) state.skills[skillName] = {};
+  state.skills[skillName].trained = !state.skills[skillName].trained;
+  renderSkills();
+}
+
+function rollSkill(skillName) {
+  // Find the skill data
+  let s = SKILL_CANON.find(x => x.name === skillName);
+  if (!s) s = state.customSkills.find(x => x.name === skillName);
+  if (!s) return;
+
+  const isTrained = state.skills[skillName]?.trained || false;
+
+  // Determine ability to use. For flex skills (two valid abilities) auto-pick the
+  // higher modifier — same rule as Finesse weapons. Ties resolve to the first-listed
+  // ability. Player can still override the stat manually via the dice roller.
+  let abilityKey;
+  if (Array.isArray(s.ability)) {
+    abilityKey = s.ability.reduce((best, code) => {
+      const bestMod = mod(parseInt(document.getElementById('score-' + best).value) || 10);
+      const thisMod = mod(parseInt(document.getElementById('score-' + code).value) || 10);
+      return thisMod > bestMod ? code : best;
+    }, s.ability[0]);
+  } else {
+    abilityKey = s.ability;
+  }
+  const abilityScore = parseInt(document.getElementById('score-' + abilityKey).value) || 10;
+  const abilityMod = mod(abilityScore);
+
+  // Untrained defaults to disadvantage (unless player already toggled advantage manually).
+  // Player can override via the dice roller's adv/dis buttons (visible at bottom).
+  // Untrained adds one automatic disadvantage source; it nets with any manual adv/dis you've set.
+  state.autoDis = isTrained ? 0 : 1;
+
+  // Set context for the dice roller using the existing lastRollContext pattern
+  lastRollContext = { type: 'skill', skill: skillName, stat: abilityKey, mod: abilityMod };
+  const stateLabel = isTrained ? 'TRAINED' : 'UNTRAINED (auto-disadvantage)';
+  const netSrc = (state.advCount || 0) - (state.disCount || 0) - state.autoDis;
+  const advLabel = netSrc > 0 ? ' [ADV]' : (netSrc < 0 ? ' [DIS]' : '');
+  document.getElementById('dice-context').textContent = `${skillName.toUpperCase()} (${statName(abilityKey)}) — ${stateLabel}${advLabel}`;
+
+  rollD20();
+}
+
+function addCustomSkill() {
+  const name = prompt("Custom skill name?");
+  if (!name || !name.trim()) return;
+  const nameClean = name.trim();
+  if (SKILL_CANON.find(s => s.name === nameClean) || state.customSkills.find(s => s.name === nameClean)) {
+    toast("Skill already exists.");
+    return;
+  }
+  const ability = prompt("Default ability? (Might/Agility/Fortitude/Cunning/Focus/Presence — or multiple separated by slash like Might/Agility)", "Cunning");
+  if (!ability) return;
+  // Accept both old short codes (STR/DEX/etc.) and new long names (Might/Agility/etc.)
+  const NEW_TO_CODE = {
+    'MIGHT': 'STR', 'AGILITY': 'DEX', 'FORTITUDE': 'CON',
+    'CUNNING': 'INT', 'FOCUS': 'WIS', 'PRESENCE': 'CHA'
+  };
+  const abilityParts = ability.trim().split('/').map(s => s.trim().toUpperCase()).filter(s => s.length > 0)
+    .map(s => NEW_TO_CODE[s] || s)
+    .filter(s => ['STR','DEX','CON','INT','WIS','CHA'].includes(s));
+  if (abilityParts.length === 0) {
+    toast("Invalid ability — try Might, Agility, Fortitude, Cunning, Focus, or Presence.");
+    return;
+  }
+  const finalAbility = abilityParts.length === 1 ? abilityParts[0] : abilityParts;
+  const category = prompt("Category? (Weapon/Physical/Social/Knowledge/Outdoor/Trades)", "Knowledge");
+  const validCat = SKILL_CATEGORY_ORDER.find(c => c.toLowerCase() === (category || '').toLowerCase());
+  state.customSkills.push({
+    name: nameClean,
+    ability: finalAbility,
+    category: validCat || "Knowledge"
+  });
+  renderSkills();
+}
+
+function deleteCustomSkill(skillName) {
+  if (!confirm(`Remove custom skill "${skillName}"?`)) return;
+  state.customSkills = state.customSkills.filter(s => s.name !== skillName);
+  delete state.skills[skillName];
+  renderSkills();
+}
+
+// =========================================
+// HP BASE PER CLASS
+// =========================================
+// Base HP at level 1 = Class Base + Constitution MODIFIER (not full score).
+// HP only grows at odd levels via the optional +HP-or-+1-stat choice.
+const CLASS_HP_BASE = {
+  "Barbarian": 15,
+  "Fighter": 14,
+  "Ranger": 13,
+  "Rogue": 12,
+  "Monk": 12,
+  "Cleric": 12,
+  "Bard": 10,
+  "Druid": 8,
+  "Wizard": 6,
+  "Pirate": 12,
+  "Awakened": 10,
+  "Maleficar": 8,  // canon per Forge v12 — fragile hexcaster
+};
+
+// Recovery die per class (rolled when spending a recovery + Fortitude mod)
+const CLASS_RECOVERY_DIE = {
+  "Barbarian": 12,
+  "Fighter": 10,
+  "Ranger": 10,
+  "Monk": 8,
+  "Rogue": 8,
+  "Cleric": 8,
+  "Druid": 8,
+  "Bard": 8,
+  "Wizard": 6,
+  "Pirate": 8,
+  "Awakened": 8,
+  "Maleficar": 6,  // canon per Forge v12 — d6 recovery
+};
+
+function suggestMaxHP() {
+  const cls = document.getElementById('char-class').value;
+  const conScore = parseInt(document.getElementById('score-CON').value) || 10;
+  const conMod = mod(conScore);
+  if (!cls || !CLASS_HP_BASE[cls]) return null;
+  return CLASS_HP_BASE[cls] + conMod;
+}
+
+function updateHPSuggestion() {
+  const suggested = suggestMaxHP();
+  const wrap = document.getElementById('hp-suggest');
+  const text = document.getElementById('hp-suggest-text');
+  if (!wrap || !text) return;
+  if (suggested === null) {
+    wrap.style.display = 'none';
+    return;
+  }
+  const cls = document.getElementById('char-class').value;
+  const base = CLASS_HP_BASE[cls];
+  const conScore = parseInt(document.getElementById('score-CON').value) || 10;
+  const conMod = mod(conScore);
+  const current = parseInt(document.getElementById('hp-max').value);
+  text.innerHTML = `Lvl 1 base: <strong style="color:var(--accent)">${suggested}</strong> (${base} + ${conMod >= 0 ? '+' : ''}${conMod} Fortitude mod)`;
+  wrap.style.display = current === suggested ? 'none' : 'block';
+}
+
+function applyHPSuggestion() {
+  const suggested = suggestMaxHP();
+  if (suggested === null) return;
+  document.getElementById('hp-max').value = suggested;
+  document.getElementById('hp-current').value = suggested;
+  updateHPSuggestion();
+  toast(`HP set to ${suggested} (Base + Constitution)`);
+}
+
+// =========================================
+// THEME TOGGLE
+// =========================================
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('theme-light');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = isLight ? '☀' : '🌙';
+  try {
+    localStorage.setItem('bb-theme', isLight ? 'light' : 'dark');
+  } catch(e) {}
+}
+
+function initTheme() {
+  try {
+    const theme = localStorage.getItem('bb-theme');
+    if (theme === 'light') {
+      document.body.classList.add('theme-light');
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '☀';
+    }
+  } catch(e) {}
+}
+initTheme();
+
+// =========================================
+// XP / LEVELING
+// =========================================
+const XP_THRESHOLDS = [0, 250, 600, 1100, 1750, 2550, 3600, 4900, 6500, 8500, 11000, 14000];
+// Index 0 = level 1 (0 XP needed), Index 11 = level 12 (5200 XP needed)
+
+function updateXP() {
+  const xp = parseInt(document.getElementById('char-xp').value) || 0;
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const hint = document.getElementById('xp-progress-hint');
+  if (!hint) return;
+  
+  if (level >= 12) {
+    hint.textContent = '— MAX LEVEL';
+    return;
+  }
+  
+  const currentLevelXP = XP_THRESHOLDS[level - 1] || 0;
+  const nextLevelXP = XP_THRESHOLDS[level] || 0;
+  const needed = nextLevelXP - xp;
+  
+  if (needed <= 0) {
+    hint.textContent = `★ READY TO LEVEL UP! (${xp} / ${nextLevelXP})`;
+    hint.style.color = 'var(--flame)';
+  } else {
+    hint.textContent = `→ ${nextLevelXP} for lvl ${level + 1} (${needed} to go)`;
+    hint.style.color = 'var(--accent)';
+  }
+}
+
+// =========================================
+// ENCUMBRANCE TOGGLE
+// =========================================
+function updateEncumberedStyle() {
+  const checked = document.getElementById('char-encumbered').checked;
+  const label = document.getElementById('encumbered-label');
+  if (checked) {
+    label.style.color = 'var(--flame)';
+    label.style.fontWeight = 'bold';
+    label.textContent = '⚖ ENCUMBERED — Cannot fight, dodge, run, swim, or ride';
+  } else {
+    label.style.color = 'var(--text)';
+    label.style.fontWeight = 'normal';
+    label.textContent = '⚖ Encumbered';
+  }
+}
+
+function isEncumbered() {
+  return document.getElementById('char-encumbered').checked;
+}
+
+// =========================================
+// TORCH / LIGHT TIMER (Real-Time)
+// =========================================
+let torchTimer = null;
+let torchEndTime = null;
+let torchSourceLabel = '';
+
+function lightTorch() {
+  const sel = document.getElementById('light-type');
+  const minutes = parseInt(sel.value) || 0;
+  if (!sel.value && minutes === 0) {
+    toast('Pick a light source first');
+    return;
+  }
+  // Capture the source label for the indicator
+  const opt = sel.options[sel.selectedIndex];
+  torchSourceLabel = opt ? opt.text : 'Light';
+
+  if (minutes === 0) {
+    // Light spell or "Other" — just show as active with no countdown
+    document.getElementById('torch-remaining').textContent = '⚡ Active';
+    if (torchTimer) clearInterval(torchTimer);
+    torchEndTime = null;
+    updateTorchIndicator();
+    toast('🔥 Light source active (no countdown)');
+    return;
+  }
+  
+  torchEndTime = Date.now() + (minutes * 60 * 1000);
+  updateTorchDisplay();
+  if (torchTimer) clearInterval(torchTimer);
+  torchTimer = setInterval(updateTorchDisplay, 1000);
+  updateTorchIndicator();
+  toast(`🔥 Lit! ${minutes} minutes remaining`);
+}
+
+function updateTorchDisplay() {
+  if (!torchEndTime) {
+    document.getElementById('torch-remaining').textContent = '—';
+    updateTorchIndicator();
+    return;
+  }
+  const remaining = torchEndTime - Date.now();
+  const display = document.getElementById('torch-remaining');
+  if (remaining <= 0) {
+    display.textContent = '💀 OUT';
+    display.style.color = 'var(--danger)';
+    clearInterval(torchTimer);
+    torchTimer = null;
+    torchEndTime = null;
+    updateTorchIndicator();
+    toast('💨 Your light has gone out! You are in darkness.');
+    return;
+  }
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  display.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+  display.style.color = remaining < 5 * 60 * 1000 ? 'var(--danger)' : 'var(--flame)';
+  updateTorchIndicator();
+}
+
+function extinguishTorch() {
+  if (torchTimer) clearInterval(torchTimer);
+  torchTimer = null;
+  torchEndTime = null;
+  torchSourceLabel = '';
+  document.getElementById('torch-remaining').textContent = '—';
+  document.getElementById('torch-remaining').style.color = 'var(--flame)';
+  document.getElementById('light-type').value = '';
+  updateTorchIndicator();
+  toast('💨 Light extinguished');
+}
+
+function updateTorchIndicator() {
+  const ind = document.getElementById('torch-indicator');
+  const icon = document.getElementById('torch-icon');
+  const text = document.getElementById('torch-indicator-text');
+  if (!ind || !icon || !text) return;
+
+  // Determine state
+  const hasCountdown = !!torchEndTime;
+  const isPersistent = !hasCountdown && document.getElementById('torch-remaining')?.textContent === '⚡ Active';
+  const isLit = hasCountdown || isPersistent;
+
+  ind.classList.remove('lit', 'unlit', 'warning');
+
+  if (!isLit) {
+    ind.classList.add('unlit');
+    icon.textContent = '🕯️';
+    text.textContent = 'unlit';
+    return;
+  }
+
+  // Lit — pick icon + text
+  ind.classList.add('lit');
+  icon.textContent = '🔥';
+
+  if (isPersistent) {
+    text.textContent = '⚡ active';
+    return;
+  }
+
+  // Countdown — show mins:secs and warn when low
+  const remaining = torchEndTime - Date.now();
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  text.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+  if (remaining < 5 * 60 * 1000) {
+    ind.classList.remove('lit');
+    ind.classList.add('warning');
+  }
+}
+
+function goToTorch() {
+  switchTab('inventory');
+  // After tab switch, scroll the torch section into view
+  setTimeout(() => {
+    const lightType = document.getElementById('light-type');
+    if (lightType) {
+      // Find the parent .section containing the light controls
+      let el = lightType;
+      while (el && !el.classList.contains('section')) el = el.parentElement;
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 50);
+}
+
+// =========================================
+// WEAPONS DATA
+// =========================================
+const WEAPONS = [
+  // Simple
+  { name: "Club", damage: "1d4", ability: "STR", properties: "Light", category: "Simple" },
+  { name: "Dagger", damage: "1d4", ability: "DEX", properties: "Finesse, Light, Thrown (20/60)", category: "Simple" },
+  { name: "Handaxe", damage: "1d6", ability: "STR", properties: "Light, Thrown (20/60)", category: "Simple" },
+  { name: "Javelin", damage: "1d6", ability: "STR", properties: "Thrown (30/120)", category: "Simple" },
+  { name: "Mace", damage: "1d6", ability: "STR", properties: "—", category: "Simple" },
+  { name: "Quarterstaff", damage: "1d6", ability: "STR", properties: "Versatile (1d8)", category: "Simple" },
+  { name: "Sickle", damage: "1d4", ability: "STR", properties: "Light", category: "Simple" },
+  { name: "Spear", damage: "1d6", ability: "STR", properties: "Thrown (20/60), Versatile (1d8)", category: "Simple" },
+  { name: "Greatclub", damage: "1d8", ability: "STR", properties: "Two-Handed", category: "Simple" },
+  { name: "Sling", damage: "1d4", ability: "DEX", properties: "Ranged (30/120)", category: "Simple" },
+  { name: "Shortbow", damage: "1d6", ability: "DEX", properties: "Ranged (80/320), Two-Handed", category: "Simple" },
+  { name: "Light Crossbow", damage: "1d8", ability: "DEX", properties: "Ranged (80/320), Two-Handed, Loading", category: "Simple" },
+  // Martial
+  { name: "Shortsword", damage: "1d6", ability: "DEX", properties: "Finesse, Light", category: "Martial" },
+  { name: "Rapier", damage: "1d8", ability: "DEX", properties: "Finesse", category: "Martial" },
+  { name: "Scimitar", damage: "1d6", ability: "DEX", properties: "Finesse, Light", category: "Martial" },
+  { name: "Longsword", damage: "1d8", ability: "STR", properties: "Versatile (1d10)", category: "Martial" },
+  { name: "Battleaxe", damage: "1d8", ability: "STR", properties: "Versatile (1d10)", category: "Martial" },
+  { name: "Warhammer", damage: "1d8", ability: "STR", properties: "Versatile (1d10)", category: "Martial" },
+  { name: "Flail", damage: "1d8", ability: "STR", properties: "—", category: "Martial" },
+  { name: "Morningstar", damage: "1d8", ability: "STR", properties: "—", category: "Martial" },
+  { name: "Whip", damage: "1d4", ability: "DEX", properties: "Finesse, Reach", category: "Martial" },
+  { name: "Trident", damage: "1d6", ability: "STR", properties: "Thrown (20/60), Versatile (1d8)", category: "Martial" },
+  { name: "Greatsword", damage: "2d6", ability: "STR", properties: "Heavy, Two-Handed", category: "Martial" },
+  { name: "Greataxe", damage: "1d12", ability: "STR", properties: "Heavy, Two-Handed", category: "Martial" },
+  { name: "Maul", damage: "2d6", ability: "STR", properties: "Heavy, Two-Handed", category: "Martial" },
+  { name: "Halberd", damage: "1d10", ability: "STR", properties: "Heavy, Two-Handed, Reach", category: "Martial" },
+  { name: "Glaive", damage: "1d10", ability: "STR", properties: "Heavy, Two-Handed, Reach", category: "Martial" },
+  { name: "Pike", damage: "1d10", ability: "STR", properties: "Heavy, Two-Handed, Reach", category: "Martial" },
+  { name: "Longbow", damage: "1d8", ability: "DEX", properties: "Heavy, Two-Handed, Ranged (150/600)", category: "Martial" },
+  { name: "Heavy Crossbow", damage: "1d10", ability: "DEX", properties: "Heavy, Two-Handed, Loading, Ranged (100/400)", category: "Martial" },
+  // Exotic (use the Swords & Blades skill — §13 Exotic Weapons)
+  { name: "Katana", damage: "1d8", ability: "DEX", properties: "Versatile (1d10), Finesse — crit: +1 weapon die", category: "Exotic" },
+  { name: "Ninjato", damage: "1d6", ability: "DEX", properties: "Light, Finesse — +1 atk w/ advantage from stealth; free draw", category: "Exotic" },
+  { name: "Hand Crossbow", damage: "1d6", ability: "DEX", properties: "Light, Loading, Ranged (30/120)", category: "Martial" }
+];
+
+// =========================================
+// ARMOR DATA
+// =========================================
+const ARMOR = [
+  // Light (full DEX)
+  { name: "Padded", ac: 11, dexMax: null, category: "Light", cost: 5 },
+  { name: "Leather", ac: 11, dexMax: null, category: "Light", cost: 10 },
+  { name: "Studded Leather", ac: 12, dexMax: null, category: "Light", cost: 45 },
+  // Medium (max +2 DEX)
+  { name: "Hide", ac: 12, dexMax: 2, category: "Medium", cost: 10 },
+  { name: "Chain Shirt", ac: 13, dexMax: 2, category: "Medium", cost: 50 },
+  { name: "Scale Mail", ac: 14, dexMax: 2, category: "Medium", cost: 50 },
+  { name: "Breastplate", ac: 14, dexMax: 2, category: "Medium", cost: 400 },
+  { name: "Half Plate", ac: 15, dexMax: 2, category: "Medium", cost: 750 },
+  // Heavy (no DEX)
+  { name: "Ring Mail", ac: 14, dexMax: 0, category: "Heavy", cost: 30 },
+  { name: "Chain Mail", ac: 16, dexMax: 0, category: "Heavy", cost: 75 },
+  { name: "Splint", ac: 17, dexMax: 0, category: "Heavy", cost: 200 },
+  { name: "Plate", ac: 18, dexMax: 0, category: "Heavy", cost: 1500 }
+];
+
+function populateArmorDropdown() {
+  const sel = document.getElementById('armor-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— None (AC 10 + Agility) —</option>';
+  
+  const categories = ["Light", "Medium", "Heavy"];
+  categories.forEach(cat => {
+    const group = document.createElement('optgroup');
+    group.label = `── ${cat} Armor ──`;
+    ARMOR.filter(a => a.category === cat).forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.name;
+      let dexNote = '';
+      if (a.dexMax === 0) dexNote = ' (no DEX)';
+      else if (a.dexMax === 2) dexNote = ' (max +2 DEX)';
+      opt.textContent = `${a.name} — AC ${a.ac}${dexNote}`;
+      group.appendChild(opt);
+    });
+    sel.appendChild(group);
+  });
+  
+  if (cur) sel.value = cur;
+}
+
+function calculateAC() {
+  const armorName = document.getElementById('armor-select').value;
+  const armorQuality = document.getElementById('armor-quality')?.value || 'Standard';
+  const shieldBonus = parseInt(document.getElementById('shield-select').value || 0);
+  const dexMod = mod(parseInt(document.getElementById('score-DEX').value) || 10);
+  const shieldUsed = (typeof shatterState !== 'undefined' && shatterState.shieldUsed) ? shatterState.shieldUsed : false;
+  const effectiveShield = (shieldBonus > 0 && !shieldUsed) ? shieldBonus : 0;
+  const cls = document.getElementById('char-class')?.value || '';
+
+  let total, formula;
+
+  if (!armorName) {
+    // Unarmored: 10 + Agility, plus the class Defense stat (Monk +Focus; Pirate +Presence / Panache)
+    let classBonus = 0;
+    formula = `10 + ${modStr(dexMod)} (Agility)`;
+    if (cls === 'Monk') {
+      classBonus = mod(parseInt(document.getElementById('score-WIS').value) || 10);
+      formula += ` + ${modStr(classBonus)} (Focus, Monk)`;
+    } else if (cls === 'Pirate') {
+      classBonus = mod(parseInt(document.getElementById('score-CHA').value) || 10);
+      formula += ` + ${modStr(classBonus)} (Presence, Panache)`;
+    }
+    total = 10 + dexMod + classBonus + effectiveShield;
+    if (effectiveShield > 0) formula += ` + 2 (shield)`;
+    else if (shieldBonus > 0 && shieldUsed) formula += ` (shield Shattered)`;
+    return { total, formula };
+  }
+
+  const armor = ARMOR.find(a => a.name === armorName);
+  let dexUsed;
+  if (armor.dexMax === 0) { dexUsed = 0; formula = `${armor.ac} (${armor.name})`; }
+  else if (armor.dexMax === 2) { dexUsed = Math.min(dexMod, 2); formula = `${armor.ac} + ${modStr(dexUsed)} (Agility, cap +2)`; }
+  else { dexUsed = dexMod; formula = `${armor.ac} + ${modStr(dexUsed)} (Agility)`; }
+
+  let qualityBonus = 0;
+  if (armorQuality === 'Low') qualityBonus = -1;
+  else if (armorQuality === 'Masterwork') qualityBonus = 1;
+  else if (armorQuality === 'Legendary') qualityBonus = 2;
+  if (qualityBonus !== 0) formula += ` ${qualityBonus > 0 ? '+' : ''}${qualityBonus} (${armorQuality})`;
+  else if (armorQuality === 'Magic') formula += ` ✦ (Magic)`;
+
+  if (effectiveShield > 0) formula += ` + 2 (shield)`;
+  else if (shieldBonus > 0 && shieldUsed) formula += ` (shield Shattered)`;
+
+  total = armor.ac + dexUsed + qualityBonus + effectiveShield;
+  return { total, formula };
+}
+
+function updateAC() {
+  const { total, formula } = calculateAC();
+  document.getElementById('calculated-ac').textContent = total;
+  document.getElementById('ac-formula').textContent = formula;
+  // Auto-sync the AC field next to HP unless the user has manually disabled sync
+  const acField = document.getElementById('ac');
+  if (acField && !acField.dataset.manualOverride) {
+    acField.value = total;
+  }
+}
+
+function applyCalculatedAC() {
+  const { total } = calculateAC();
+  const acField = document.getElementById('ac');
+  acField.value = total;
+  delete acField.dataset.manualOverride;
+  toast(`AC synced to ${total}`);
+}
+
+// =========================================
+// ARMOR SHATTER SYSTEM
+// =========================================
+let shatterState = {
+  shieldUsed: false,  // true once the shield has been sacrificed (Shattered)
+  lastArmor: ''       // tracks armor change to clear the AC manual-override
+};
+
+function updateShatterUI() {
+  const armorName = document.getElementById('armor-select').value;
+  const shieldBonus = parseInt(document.getElementById('shield-select').value || 0);
+  const tracker = document.getElementById('shatter-tracker');
+  const shieldRow = document.getElementById('shield-shatter-row');
+
+  // Clear the manual AC override when armor changes (auto-sync to the new piece)
+  if (armorName !== shatterState.lastArmor) {
+    shatterState.lastArmor = armorName;
+    const acField = document.getElementById('ac');
+    if (acField) delete acField.dataset.manualOverride;
+  }
+
+  // Armor no longer Shatters (static AC). The panel always shows the rule + Die of Fate;
+  // the shield control appears only when a shield is equipped.
+  tracker.style.display = 'block';
+  if (shieldBonus > 0) {
+    shieldRow.style.display = 'block';
+    updateShieldUI();
+  } else {
+    shieldRow.style.display = 'none';
+    shatterState.shieldUsed = false;
+  }
+}
+
+function updateShieldUI() {
+  const stateLabel = document.getElementById('shield-state');
+  const breakBtn = document.getElementById('shield-shatter-btn');
+  const restoreBtn = document.getElementById('shield-restore-btn');
+  
+  if (shatterState.shieldUsed) {
+    stateLabel.innerHTML = `<span style="color:var(--danger);font-weight:bold;">DESTROYED</span>`;
+    breakBtn.style.display = 'none';
+    restoreBtn.style.display = 'inline-block';
+  } else {
+    stateLabel.innerHTML = `<span style="color:var(--success);">Intact</span>`;
+    breakBtn.style.display = 'inline-block';
+    restoreBtn.style.display = 'none';
+  }
+}
+
+function shatterArmor() {
+  const sel = document.getElementById('armor-select');
+  if (!sel || !sel.value) { alert('No armor worn.'); return; }
+  if (!confirm('Shatter your armor? The blow is negated — the armor is WRECKED (unarmored AC until replaced).')) return;
+  sel.value = '';
+  const q = document.getElementById('armor-quality'); if (q) q.value = 'Standard';
+  updateShatterUI(); updateAC();
+  const log = document.getElementById('roll-result');
+  if (log) log.innerHTML = '🛡💥 <strong>Armor Shattered</strong> — attack negated; you are at unarmored AC until it\'s replaced.';
+}
+
+function useShield() {
+  shatterState.shieldUsed = true;
+  updateShieldUI();
+  updateAC();
+  toast('Shield Shattered! (Tap "Restore" if you re-equip)');
+}
+
+function restoreShield() {
+  shatterState.shieldUsed = false;
+  updateShieldUI();
+  updateAC();
+  toast('Shield restored.');
+}
+
+function rollDieOfFate() {
+  const result = Math.floor(Math.random() * 6) + 1;
+  const resultEl = document.getElementById('fate-result');
+  
+  let html = '';
+  if (result === 1) {
+    html = `<span style="color:var(--danger);">🎲 1 — FUMBLE</span>`;
+  } else if (result === 6) {
+    html = `<span style="color:var(--success);">🎲 6 — GLANCE</span>`;
+  } else {
+    html = `<span style="color:var(--text-dim);">🎲 ${result} — Normal</span>`;
+  }
+  
+  resultEl.innerHTML = html;
+  resultEl.style.display = 'block';
+  
+  setTimeout(() => {
+    resultEl.style.display = 'none';
+  }, 5000);
+}
+
+function populateBackgroundDropdowns() {
+  const cls = document.getElementById('char-class').value;
+  const bg1 = document.getElementById('char-bg1');
+  const bg2 = document.getElementById('char-bg2');
+  
+  // Remember current selections
+  const cur1 = bg1.value;
+  const cur2 = bg2.value;
+  
+  // Get available backgrounds based on class
+  let available = [...STANDARD_BACKGROUNDS];
+  if (cls === 'Druid') {
+    available = [...available, ...DRUID_BACKGROUNDS].sort();
+  }
+  
+  // Build options for both dropdowns
+  const buildOptions = (selectEl, currentValue) => {
+    selectEl.innerHTML = '<option value="">— Select Background —</option>';
+    
+    // For Druid, group the Druid backgrounds with a separator
+    if (cls === 'Druid') {
+      const standardGroup = document.createElement('optgroup');
+      standardGroup.label = '── Standard Backgrounds ──';
+      STANDARD_BACKGROUNDS.forEach(bg => {
+        const opt = document.createElement('option');
+        opt.value = bg;
+        opt.textContent = bg;
+        standardGroup.appendChild(opt);
+      });
+      
+      const druidGroup = document.createElement('optgroup');
+      druidGroup.label = '── Druid Element (Required) ──';
+      DRUID_BACKGROUNDS.forEach(bg => {
+        const opt = document.createElement('option');
+        opt.value = bg;
+        opt.textContent = bg;
+        druidGroup.appendChild(opt);
+      });
+      
+      selectEl.appendChild(druidGroup);
+      selectEl.appendChild(standardGroup);
+    } else {
+      STANDARD_BACKGROUNDS.forEach(bg => {
+        const opt = document.createElement('option');
+        opt.value = bg;
+        opt.textContent = bg;
+        // Mark required background based on class
+        if (cls && CLASS_REQUIRED_BG[cls] === bg) {
+          opt.textContent = bg + ' ★ (Required by class)';
+        }
+        selectEl.appendChild(opt);
+      });
+    }
+    
+    // Restore selection if still valid
+    if (currentValue && Array.from(selectEl.options).some(o => o.value === currentValue)) {
+      selectEl.value = currentValue;
+    }
+  };
+  
+  buildOptions(bg1, cur1);
+  buildOptions(bg2, cur2);
+  
+  // Update the required hint
+  const hint = document.getElementById('bg1-required-hint');
+  if (cls === 'Druid') {
+    hint.textContent = '★ requires Druid element';
+  } else if (cls && CLASS_REQUIRED_BG[cls]) {
+    hint.textContent = `★ requires ${CLASS_REQUIRED_BG[cls]}`;
+  } else {
+    hint.textContent = '';
+  }
+}
+
+// =========================================
+// PRE-GEN CHARACTERS
+// =========================================
+const preGens = {
+  "Conan the Cimmerian": {
+    "char-name": "Conan", "char-level": 3, "char-xp": 250, "char-ancestry": "Northron", "char-class": "Barbarian",
+    "char-subclass": "Exile", "char-tradition": "",
+    "char-bg1": "Outlander", "char-bg2": "Folk Hero",
+    "score-STR": 17, "score-DEX": 14, "score-CON": 16, "score-INT": 10, "score-WIS": 12, "score-CHA": 13,
+    "hp-current": 18, "hp-max": 18, "ac": 14, "speed": 30,
+    "recov-current": 7, "recov-max": 7, "coin": 25, "supplies": 5,
+    "armor-select": "Hide", "shield-select": "0",
+    "skillsState": {
+      "Swords & Blades": {trained: true},
+      "Axes & Hammers": {trained: true},
+      "Survival": {trained: true},
+      "Animal Handling": {trained: true},
+      "Athletics": {trained: true},
+      "Perception": {trained: true},
+      "Intimidation": {trained: true},
+      "Persuasion": {trained: true}
+    },
+    "customSkills": [],
+    "scars": [], "afflictions": [],
+    "class-features": "Lvl 1: BERSERKER FURY (Rage, includes one attack), BERSERKER INITIATIVE (init = 20+Might while raging vs Greater Foes), Combat Triggers, Danger Sense\nLvl 2: ASI +2 Might or New Muscle Move\nLvl 3: Exile subclass — the sword-and-sorcery wanderer (Riddle of Steel: a Named Blade vs Greater Foes)",
+    "ancestry-traits": "Northron (+2 Might): REFUSE TO DIE (once per R&R, drop to 1 HP instead of 0) + VERSATILE (+1 to a second ability) + a chosen general Trait. Languages: Common, Northron. The iron men of the cold north.",
+    "trigger-name": "Savage Strike", "trigger-when": "Odd hit while raging", "trigger-effect": "+1d8 damage",
+    "weapons": [{ weapon: "Greatsword" }, { weapon: "Handaxe" }],
+    "moves": [{ name: "PERFECT STRIKE - Add Muscle Die to attack" }, { name: "CRUSHING BLOW - Add Muscle Die to damage" }],
+    "worn":   [{ name: "Backpack (slung)" }, { name: "Tinderbox (belt pouch)" }],
+    "pack":   [{ name: "Rations x5" }, { name: "Bedroll" }],
+    "stored": []
+  },
+  "Gandalf the Wise": {
+    "char-name": "Gandalf", "char-level": 5, "char-xp": 700, "char-ancestry": "Westlander", "char-class": "Wizard",
+    "char-subclass": "Arcanist", "char-tradition": "The Light's Authority",
+    "char-bg1": "Scholar", "char-bg2": "Sage",
+    "score-STR": 9, "score-DEX": 12, "score-CON": 13, "score-INT": 18, "score-WIS": 16, "score-CHA": 14,
+    "hp-current": 7, "hp-max": 7, "ac": 11, "speed": 30,
+    "recov-current": 8, "recov-max": 8, "coin": 100, "supplies": 3,
+    "armor-select": "", "shield-select": "0",
+    "skillsState": {
+      "Staves & Rods": {trained: true},
+      "Arcana": {trained: true},
+      "History & Lore": {trained: true},
+      "Investigation": {trained: true},
+      "Religion & Occultism": {trained: true},
+      "Potions & Alchemy": {trained: true},
+      "Insight": {trained: true}
+    },
+    "customSkills": [],
+    "scars": [], "afflictions": [],
+    "class-features": "Lvl 1: Spellcasting (Cunning), Generalist spell list access\nLvl 2: Magick Tricks\nLvl 3: Signature Spell - Trace Magick; Arcanist subclass — Warder's Vigilance (enhanced Shield: +7 AC / 18 absorbed)\nLvl 4: ASI +2 Cunning\nLvl 5: Order spells unlocked",
+    "ancestry-traits": "Westlander (+1 to two abilities: Cunning, Focus — this IS their Versatile): ADAPTABLE SPIRIT (+2 free trained skills) + a chosen general Trait. Languages: Common only (Westlanders have no separate tongue). The lettered western shore.",
+    "weapons": [{ weapon: "Quarterstaff" }, { weapon: "Dagger" }],
+    "moves": [{ name: "Fireball (3rd lvl) - 8d6 fire, save half" }, { name: "Shield (1st lvl, reaction or action) - +5 AC, Shatter for 15 dmg absorbed" }, { name: "Magic Missile (1st lvl) - 3 darts 1d4+1" }, { name: "Witchstep (reaction) - Acrobatics check adv to dodge any attack" }, { name: "Stonemantle (concentration) - half damage, disadv on attacks" }],
+    "worn":   [{ name: "Arcane focus (staff)" }, { name: "Robes" }, { name: "Component pouch (belt)" }],
+    "pack":   [{ name: "Spellbook" }],
+    "stored": []
+  },
+  "Bilbo Stoutfoot": {
+    "char-name": "Bilbo", "char-level": 2, "char-xp": 100, "char-ancestry": "Kithling", "char-class": "Rogue",
+    "char-subclass": "", "char-tradition": "",
+    "char-bg1": "Criminal", "char-bg2": "Folk Hero",
+    "score-STR": 9, "score-DEX": 17, "score-CON": 14, "score-INT": 13, "score-WIS": 12, "score-CHA": 15,
+    "hp-current": 14, "hp-max": 14, "ac": 14, "speed": 25,
+    "recov-current": 6, "recov-max": 6, "coin": 50, "supplies": 4,
+    "armor-select": "Leather", "shield-select": "0",
+    "skillsState": {
+      "Knives & Daggers": {trained: true},
+      "Stealth": {trained: true},
+      "Sleight of Hand": {trained: true},
+      "Lockpicking & Mechanisms": {trained: true},
+      "Deception": {trained: true},
+      "Insight": {trained: true},
+      "Acrobatics": {trained: true},
+      "Perception": {trained: true},
+      "Investigation": {trained: true},
+      "Animal Handling": {trained: true},
+      "Survival": {trained: true},
+      "Persuasion": {trained: true},
+      "Smithing & Repair": {trained: true}
+    },
+    "customSkills": [],
+    "scars": [], "afflictions": [],
+    "class-features": "Lvl 1: OPPORTUNIST (base signature — hit an Off-Balance foe for +1 die, rising by tier; reliable, not a burst), LIGHTNING REFLEXES (no OA on movement, advantage on Initiative)\nLvl 2: Combat Triggers (Shadow Slip / Trip Up / Ghost Step)\nLvl 3 (next): Pick Subclass — Shinobi (silent killer, gains Killing Blow) or Swashbuckler (Presence duelist)",
+    "ancestry-traits": "Kithling (+2 Agility): FATE'S FAVORITE (reroll any natural 1) + pick one of UNDERFOOT (move through larger creatures) or NATURAL STEALTH (advantage in forests/riverlands) — here taking Underfoot. Languages: Common, Kithling. Green-skinned river-road folk, lucky and quick-witted.",
+    "trigger-name": "Shadow Slip", "trigger-when": "Odd hit", "trigger-effect": "Hide as free action",
+    "weapons": [{ weapon: "Shortsword" }, { weapon: "Shortbow" }, { weapon: "Dagger" }],
+    "moves": [{ name: "PERFECT STRIKE - Add Muscle Die to attack" }, { name: "IRON GUARD - Add Muscle Die to AC (reaction)" }],
+    "worn":   [{ name: "Thieves' tools (belt)" }, { name: "Lockpicks (belt)" }, { name: "20 arrows (quiver)" }],
+    "pack":   [{ name: "50ft rope" }],
+    "stored": []
+  },
+  "Brother Cadfael": {
+    "char-name": "Brother Cadfael", "char-level": 3, "char-xp": 250, "char-ancestry": "Dvergr", "char-class": "Cleric",
+    "char-subclass": "Friar", "char-tradition": "",
+    "char-bg1": "Acolyte", "char-bg2": "Bonesaws",
+    "score-STR": 13, "score-DEX": 10, "score-CON": 15, "score-INT": 12, "score-WIS": 14, "score-CHA": 17,
+    "hp-current": 14, "hp-max": 14, "ac": 18, "speed": 25,
+    "recov-current": 7, "recov-max": 7, "coin": 30, "supplies": 6,
+    "armor-select": "Chain Mail", "shield-select": "2",
+    "skillsState": {
+      "Maces & Clubs": {trained: true},
+      "Religion & Occultism": {trained: true},
+      "Medicine": {trained: true},
+      "Insight": {trained: true},
+      "History & Lore": {trained: true},
+      "Persuasion": {trained: true},
+      "Potions & Alchemy": {trained: true},
+      "Survival": {trained: true},
+      "Investigation": {trained: true}
+    },
+    "customSkills": [],
+    "scars": [], "afflictions": [],
+    "class-features": "Lvl 1: Spellcasting (Presence), DIVINE HEALER (Word of Life + Laying on Hands as at-will healing cantrips), HAND OF GOD (Divine Wrath/Divine Insight), Turn Undead (cantrip)\nLvl 2: Magick Dice support (Blessing of Life, Cheat Death, Purifying Touch)\nLvl 3: Signature Spell - Sister Saywell's Soothing; Friar — Healer's Touch (+1d8 healing, Healing Pool 15 HP, +2d8 on LoH). Friar at L8 makes Word of Life a Reaction.",
+    "ancestry-traits": "Dvergr (+2 Fortitude): STONESKIN (+1 AC always) + pick one of IRON GUT (toxic resistance, adv vs poison) or STONE SENSE (advantage underground/stonework) — here taking Iron Gut. Languages: Common, Dvergr. Stone-skinned mountain folk, hairless and warlike, ancient enemies of the Altuari.",
+    "weapons": [{ weapon: "Warhammer" }, { weapon: "Light Crossbow" }],
+    "moves": [{ name: "WORD OF LIFE (action, at-will) - target spends recovery + Presence" }, { name: "LAYING ON HANDS (action, at-will) - target spends recovery + 1d8 + Presence" }, { name: "Bless (1st lvl) - 3 allies +1d4 attacks/saves" }, { name: "BLESSING OF LIFE (Magic Die) - grant extra recovery" }, { name: "CHEAT DEATH (Magic Die) - advantage on death save" }, { name: "PURIFYING TOUCH (Magic Die) - remove condition" }],
+    "worn":   [{ name: "Holy symbol (neck)" }, { name: "Vestments" }, { name: "Prayer beads (belt)" }],
+    "pack":   [{ name: "Healer's kit" }],
+    "stored": []
+  },
+  "Skarn Goblinblade": {
+    "char-name": "Skarn", "char-level": 4, "char-xp": 450, "char-ancestry": "Kithling", "char-class": "Rogue",
+    "char-subclass": "Shinobi", "char-tradition": "",
+    "char-bg1": "Criminal", "char-bg2": "Urchin",
+    "score-STR": 10, "score-DEX": 18, "score-CON": 13, "score-INT": 14, "score-WIS": 12, "score-CHA": 10,
+    "hp-current": 13, "hp-max": 13, "ac": 16, "speed": 30,
+    "recov-current": 7, "recov-max": 7, "coin": 75, "supplies": 5,
+    "armor-select": "Studded Leather", "shield-select": "0",
+    "skillsState": {
+      "Knives & Daggers": {trained: true},
+      "Crossbows & Firearms": {trained: true},
+      "Stealth": {trained: true},
+      "Sleight of Hand": {trained: true},
+      "Lockpicking & Mechanisms": {trained: true},
+      "Deception": {trained: true},
+      "Insight": {trained: true},
+      "Acrobatics": {trained: true},
+      "Perception": {trained: true},
+      "Athletics": {trained: true},
+      "Survival": {trained: true}
+    },
+    "customSkills": [],
+    "scars": [], "afflictions": [],
+    "class-features": "Lvl 1: OPPORTUNIST (base signature), LIGHTNING REFLEXES\nLvl 2: Combat Triggers\nLvl 3: SHINOBI subclass — Strike from the Dark (auto-crit vs unaware) + KILLING BLOW (the alpha-strike from an opening)\nLvl 4: ASI +2 Agility, Adventurer Set (Archery Training)",
+    "ancestry-traits": "Kithling (+2 Agility): FATE'S FAVORITE (reroll any natural 1) + pick one of UNDERFOOT or NATURAL STEALTH (advantage in forests/riverlands) — here taking Natural Stealth. Languages: Common, Kithling. (Slippery / Giant Killer / Shadow Walker are Rogue class features, not ancestry.) The green-skinned river-folk.",
+    "trigger-name": "Killing Precision", "trigger-when": "18+ with advantage", "trigger-effect": "Double KILLING BLOW dice",
+    "weapons": [{ weapon: "Shortsword" }, { weapon: "Shortbow" }, { weapon: "Hand Crossbow" }],
+    "moves": [{ name: "PERFECT STRIKE - +Muscle Die to attack" }, { name: "GIANT KILLER (1/R&R) - add level to damage vs larger" }],
+    "worn":   [{ name: "Thieves' tools (belt)" }, { name: "Poison vial (pouch)" }, { name: "Smokestick (pouch)" }],
+    "pack":   [{ name: "Climbing kit" }],
+    "stored": []
+  }
+};
+
+// =========================================
+// HELPERS
+// =========================================
+function mod(score) {
+  // v104: top-accelerated — 18/+4, 19/+5, 20/+6
+  if (score >= 18) return score - 14;
+  return Math.floor((score - 10) / 2);
+}
+function modStr(m) {
+  return (m >= 0 ? '+' : '') + m;
+}
+function toast(msg, duration = 2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// =========================================
+// MODIFIERS
+// =========================================
+function updateMods() {
+  if (typeof updateSpellSlots === 'function') setTimeout(updateSpellSlots, 0);
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(a => {
+    const score = parseInt(document.getElementById('score-' + a).value) || 10;
+    const m = mod(score);
+    document.getElementById('mod-' + a).textContent = modStr(m);
+  });
+  const dexMod = mod(parseInt(document.getElementById('score-DEX').value) || 10);
+  document.getElementById('display-init').textContent = modStr(dexMod);
+  // Update AC since DEX (Agility) affects it
+  if (document.getElementById('calculated-ac')) updateAC();
+  // Update HP suggestion since CON (Fortitude) affects it
+  if (document.getElementById('hp-suggest')) updateHPSuggestion();
+  // Update Class DC
+  updateClassDC();
+  // Update Grit and Resolve (derived save stats)
+  updateGritResolve();
+}
+
+function updateGritResolve() {
+  const gritEl = document.getElementById('grit-display');
+  const resolveEl = document.getElementById('resolve-display');
+  if (!gritEl || !resolveEl) return;
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const budget = Math.floor(level / 2);  // +1 per even level, player-allocated
+  const gRaise = parseInt(document.getElementById('grit-raise')?.value) || 0;
+  const rRaise = parseInt(document.getElementById('resolve-raise')?.value) || 0;
+  const mightMod = mod(parseInt(document.getElementById('score-STR').value) || 10);
+  const fortMod  = mod(parseInt(document.getElementById('score-CON').value) || 10);
+  const focusMod = mod(parseInt(document.getElementById('score-WIS').value) || 10);
+  const presMod  = mod(parseInt(document.getElementById('score-CHA').value) || 10);
+  const grit = Math.min(mightMod, fortMod) + gRaise;
+  const resolve = Math.min(focusMod, presMod) + rRaise;
+  const over = (gRaise + rRaise) > budget;
+  gritEl.textContent = `Grit ${modStr(grit)}`;
+  gritEl.title = `lower of Might (${modStr(mightMod)}) / Fortitude (${modStr(fortMod)})${gRaise ? ` + ${gRaise} raised` : ''} — vs poison, disease, exhaustion, sustained physical effects`;
+  resolveEl.textContent = `Resolve ${modStr(resolve)}`;
+  resolveEl.title = `lower of Focus (${modStr(focusMod)}) / Presence (${modStr(presMod)})${rRaise ? ` + ${rRaise} raised` : ''} — vs fear, charm, madness, compulsion, illusion`;
+  gritEl.style.color = resolveEl.style.color = '';
+  if (over) { gritEl.title += ` • OVER BUDGET: ${gRaise + rRaise}/${budget} raises at L${level}`; toast(`Save raises over budget: ${gRaise + rRaise}/${budget} at L${level}`); }
+}
+
+function updateTriggerBanner() {
+  const n = document.getElementById('trigger-name')?.value?.trim() || '';
+  const w = document.getElementById('trigger-when')?.value?.trim() || '';
+  const fx = document.getElementById('trigger-effect')?.value?.trim() || '';
+  const b = document.getElementById('armed-trigger-banner');
+  if (!b) return;
+  if (!n && !w) { b.style.display = 'none'; return; }
+  b.style.display = 'block';
+  document.getElementById('armed-trigger-line').textContent = n + (w ? ' — on ' + w : '');
+  document.getElementById('armed-trigger-fx').textContent = fx;
+}
+
+function updateTierBox() {
+  const lvl = parseInt(document.getElementById('char-level')?.value) || 1;
+  const tier = lvl >= 10 ? 4 : lvl >= 7 ? 3 : lvl >= 4 ? 2 : 1;
+  const pool = [null, '3×d6', '5×d8', '7×d10', '9×d12'][tier];
+  const el = document.getElementById('tier-box');
+  if (el) el.innerHTML = `T${tier} <span style="font-size:10px;font-weight:normal;color:var(--text-faded);">· ${pool}</span>`;
+}
+
+function updateClassDC() {
+  const dcEl = document.getElementById('display-class-dc');
+  if (!dcEl) return;
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  // Smoothed Class DC: 12 (L1-2) / 13 (L3-4) / 15 (L5-6) / 17 (L7-8) / 18 (L9-10) / 20 (L11-12)
+  let base;
+  if (level <= 2) base = 12;
+  else if (level <= 4) base = 13;
+  else if (level <= 6) base = 15;
+  else if (level <= 8) base = 17;
+  else if (level <= 10) base = 18;
+  else base = 20;
+  // Primary ability — pick the highest of INT/WIS/CHA (casters) or STR/DEX/CON (martials)
+  // Take max of all 6 since we don't know which class the player picked
+  let maxMod = -5;
+  ['STR','DEX','CON','INT','WIS','CHA'].forEach(a => {
+    const score = parseInt(document.getElementById('score-' + a).value) || 10;
+    const m = mod(score);
+    if (m > maxMod) maxMod = m;
+  });
+  dcEl.textContent = base + maxMod;
+  dcEl.title = `Base ${base} (L${level}) + ${modStr(maxMod)} highest ability mod`;
+}
+
+// =========================================
+// CONDITIONS
+// =========================================
+function toggleCondition(stat) {
+  state.conditions[stat] = !state.conditions[stat];
+  const card = document.querySelector(`.condition-card[data-cond="${stat}"]`);
+  const abil = document.querySelector(`.ability[data-ability="${stat}"]`);
+  const condName = document.getElementById('cond-' + stat);
+  if (state.conditions[stat]) {
+    if (card) card.classList.add('active');
+    if (abil) abil.classList.add('has-condition');
+    if (condName) condName.classList.add('active');
+  } else {
+    if (card) card.classList.remove('active');
+    if (abil) abil.classList.remove('has-condition');
+    if (condName) condName.classList.remove('active');
+  }
+  // Refresh combat tab mirror so condition state propagates across tabs
+  if (typeof renderCombatScoresMirror === 'function') renderCombatScoresMirror();
+}
+
+// =========================================
+// DICE ROLLING
+// =========================================
+let lastRollTotal = null;
+let lastRollNatural = null;
+let lastRollContext = null;
+
+// Internal stat-code → display name mapping (v31 stat rename)
+const STAT_DISPLAY = {
+  'STR': 'Might', 'DEX': 'Agility', 'CON': 'Fortitude',
+  'INT': 'Cunning', 'WIS': 'Focus', 'CHA': 'Presence'
+};
+function statName(code) { return STAT_DISPLAY[code] || code; }
+
+function rollAbility(stat) {
+  const m = mod(parseInt(document.getElementById('score-' + stat).value) || 10);
+  lastRollContext = { type: 'ability', stat, mod: m };
+  document.getElementById('dice-context').textContent = `${statName(stat).toUpperCase()} CHECK`;
+  state.autoDis = 0;
+  rollD20();
+}
+
+function rollGrit() {
+  const gRaise = parseInt(document.getElementById('grit-raise')?.value) || 0;
+  const mightMod = mod(parseInt(document.getElementById('score-STR').value) || 10);
+  const fortMod = mod(parseInt(document.getElementById('score-CON').value) || 10);
+  const total = Math.min(mightMod, fortMod) + gRaise;  // canon: lower of Might/Fortitude + raises
+  lastRollContext = { type: 'grit', mod: total, stat: 'Grit' };
+  document.getElementById('dice-context').textContent = 'GRIT CHECK';
+  state.autoDis = 0;
+  rollD20();
+}
+
+function rollResolve() {
+  const rRaise = parseInt(document.getElementById('resolve-raise')?.value) || 0;
+  const focusMod = mod(parseInt(document.getElementById('score-WIS').value) || 10);
+  const presMod = mod(parseInt(document.getElementById('score-CHA').value) || 10);
+  const total = Math.min(focusMod, presMod) + rRaise;  // canon: lower of Focus/Presence + raises
+  lastRollContext = { type: 'resolve', mod: total, stat: 'Resolve' };
+  document.getElementById('dice-context').textContent = 'RESOLVE CHECK';
+  state.autoDis = 0;
+  rollD20();
+}
+
+function rollInit() {
+  const m = mod(parseInt(document.getElementById('score-DEX').value) || 10);
+  lastRollContext = { type: 'init', mod: m };
+  document.getElementById('dice-context').textContent = 'INITIATIVE';
+  state.autoDis = 0;
+  rollD20();
+}
+
+function rollD20() {
+  // Stacking rule: advantages and disadvantages net 1-for-1; each net source adds one d20
+  // to the pool (net ±1 = 2d20, ±2 = 3d20, …); keep the highest (adv) or lowest (dis).
+  const totalAdv = state.advCount || 0;
+  const totalDis = (state.disCount || 0) + (state.autoDis || 0);
+  const net = totalAdv - totalDis;
+  const r20 = () => Math.floor(Math.random() * 20) + 1;
+  const nDice = Math.abs(net) + 1;
+  const rolls = Array.from({ length: nDice }, r20);
+  let result, modeLabel = '';
+  if (net > 0) { result = Math.max(...rolls); modeLabel = 'adv'; }
+  else if (net < 0) { result = Math.min(...rolls); modeLabel = 'dis'; }
+  else { result = rolls[0]; }
+
+  let total = result;
+  let detail = `d20: ${rolls.join(' / ')}`;
+  if (modeLabel === 'adv') detail += ` (adv, ${nDice}d20 ↑)`;
+  else if (modeLabel === 'dis') detail += ` (dis, ${nDice}d20 ↓)`;
+
+  if (lastRollContext && lastRollContext.mod !== undefined) {
+    total += lastRollContext.mod;
+    detail += ` ${modStr(lastRollContext.mod)} (${statName(lastRollContext.stat) || 'mod'})`;
+  }
+
+  if (state.useEsc) {
+    total += state.escalation;
+    detail += ` +${state.escalation} (momentum)`;
+  }
+
+  detail += ` = ${total}`;
+
+  lastRollTotal = total;
+  lastRollNatural = result;
+
+  const valEl = document.getElementById('dice-value');
+  valEl.textContent = total;
+  valEl.classList.remove('crit', 'fumble');
+  if (result === 20) {
+    valEl.classList.add('crit');
+    detail += ' • CRIT!';
+  }
+  if (result === 1) {
+    valEl.classList.add('fumble');
+    detail += ' • FUMBLE!';
+  }
+  document.getElementById('dice-detail').textContent = detail;
+  
+  // Calculate spillover if target AC is entered AND this was an attack
+  recalcSpillover();
+}
+
+function recalcSpillover() {
+  const spillEl = document.getElementById('spillover-result');
+  if (!spillEl) return;
+  const targetAC = parseInt(document.getElementById('target-ac').value);
+  if (!targetAC || lastRollTotal === null) {
+    spillEl.textContent = '';
+    return;
+  }
+  // Natural 1 is fumble - no hit
+  if (lastRollNatural === 1) {
+    spillEl.innerHTML = '<span style="color:var(--danger)">FUMBLE — auto-miss, no spillover</span>';
+    return;
+  }
+  // Attacks only - other rolls just show pass/fail
+  const isAttack = lastRollContext && lastRollContext.type === 'attack';
+  
+  if (lastRollTotal >= targetAC) {
+    const spillover = lastRollTotal - targetAC;
+    if (isAttack) {
+      const stance = document.getElementById('stance-select')?.value || 'standard';
+      let msg = `✓ HIT vs AC ${targetAC}`;
+      if (stance === 'cautious') {
+        msg += ' — Cautious move: <strong>+ability mod</strong> to damage, +1 was on the attack (no Spillover)';
+      } else if (stance === 'defensive') {
+        msg += spillover > 0 ? ' — Defensive move: no Spillover (Momentum rides your reactions; misses Graze for half)' : ' — Defensive: a miss still <strong>Grazes for half damage</strong>';
+      } else {
+        msg += spillover > 0 ? ` — Spillover damage: <strong>+${spillover}</strong> (default)` : ' — bare hit, no Spillover';
+      }
+      if (lastRollNatural === 20) msg += stance !== 'cautious' && stance !== 'defensive' ? ' • CRIT (double dice, then + Spillover!)' : ' • CRIT (double dice!)';
+      spillEl.innerHTML = msg;
+    } else {
+      spillEl.innerHTML = `<span style="color:var(--success)">✓ SUCCESS vs DC ${targetAC} (beat by ${spillover})</span>`;
+    }
+  } else {
+    const miss = targetAC - lastRollTotal;
+    spillEl.innerHTML = `<span style="color:var(--danger)">✗ ${isAttack ? 'MISS' : 'FAIL'} vs ${isAttack ? 'AC' : 'DC'} ${targetAC} (by ${miss})</span>`;
+  }
+}
+
+function netLabel(net) {
+  if (net === 0) return 'Straight roll (1d20)';
+  if (net === 1) return 'Advantage (2d20 ↑)';
+  if (net === -1) return 'Disadvantage (2d20 ↓)';
+  if (net > 1) return `Advantage (${net + 1}d20 ↑)`;
+  return `Disadvantage (${Math.abs(net) + 1}d20 ↓)`;
+}
+
+function updateAdvDisUI() {
+  const ac = document.getElementById('adv-count');
+  const dc = document.getElementById('dis-count');
+  if (ac) ac.textContent = state.advCount || 0;
+  if (dc) dc.textContent = state.disCount || 0;
+  const advS = document.getElementById('adv-stepper');
+  const disS = document.getElementById('dis-stepper');
+  if (advS) advS.classList.toggle('active', (state.advCount || 0) > 0);
+  if (disS) disS.classList.toggle('active', (state.disCount || 0) > 0);
+  const ro = document.getElementById('net-readout');
+  if (ro) ro.textContent = netLabel((state.advCount || 0) - (state.disCount || 0));
+}
+
+function adjAdv(type, delta) {
+  if (type === 'adv') state.advCount = Math.max(0, (state.advCount || 0) + delta);
+  else state.disCount = Math.max(0, (state.disCount || 0) + delta);
+  updateAdvDisUI();
+}
+
+function rollManual() {
+  state.autoDis = 0;
+  rollD20();
+}
+
+function toggleEsc() {
+  state.useEsc = !state.useEsc;
+  document.getElementById('esc-toggle').classList.toggle('active', state.useEsc);
+}
+
+function cycleEscalation() {
+  state.escalation = (state.escalation + 1) % 7;
+  document.getElementById('escalation').textContent = '+' + state.escalation;
+}
+
+// =========================================
+// HP / RECOVERIES
+// =========================================
+function adjustHP(delta) {
+  const input = document.getElementById('hp-current');
+  input.value = parseInt(input.value || 0) + delta;
+  checkDeath();
+}
+function adjustRecov(delta) {
+  const input = document.getElementById('recov-current');
+  const max = parseInt(document.getElementById('recov-max').value) || 0;
+  let v = parseInt(input.value || 0) + delta;
+  v = Math.max(0, Math.min(max, v));
+  input.value = v;
+}
+function spendRecovery() {
+  const recovInput = document.getElementById('recov-current');
+  const recov = parseInt(recovInput.value || 0);
+  if (recov <= 0) {
+    toast('No recoveries left!');
+    return;
+  }
+  const cls = document.getElementById('char-class').value;
+  const dieSize = CLASS_RECOVERY_DIE[cls] || 8;
+  const conMod = mod(parseInt(document.getElementById('score-CON').value) || 10);
+  const dieRoll = Math.floor(Math.random() * dieSize) + 1;
+  const healAmount = Math.max(1, dieRoll + conMod);  // Min 1 HP
+  const maxHP = parseInt(document.getElementById('hp-max').value) || 0;
+  const hpInput = document.getElementById('hp-current');
+  hpInput.value = Math.min(parseInt(hpInput.value || 0) + healAmount, maxHP);
+  recovInput.value = recov - 1;
+  
+  // Show in dice roller display
+  document.getElementById('dice-context').textContent = `RECOVERY (1d${dieSize}${conMod !== 0 ? ' ' + modStr(conMod) : ''})`;
+  const valEl = document.getElementById('dice-value');
+  valEl.textContent = healAmount;
+  valEl.classList.remove('crit', 'fumble');
+  if (dieRoll === dieSize) valEl.classList.add('crit');
+  document.getElementById('dice-detail').textContent = `d${dieSize}: ${dieRoll}${conMod !== 0 ? ' ' + modStr(conMod) : ''} = +${healAmount} HP • ${recov - 1} recoveries left`;
+  document.getElementById('spillover-result').innerHTML = '';
+  lastRollTotal = null;
+  
+  toast(`+${healAmount} HP (1d${dieSize}: ${dieRoll}${conMod !== 0 ? ' ' + modStr(conMod) : ''})`);
+  checkDeath();
+}
+function checkDeath() {
+  const hp = parseInt(document.getElementById('hp-current').value || 0);
+  const ds = document.getElementById('death-save');
+  if (hp <= 0) ds.classList.add('show');
+  else ds.classList.remove('show');
+}
+// =========================================
+// DEATH SAVES & PERMANENT SCARS
+// =========================================
+// Permanent Scars — physical wounds from failed Death Saves (the body's wound track)
+// v31 final: severity-graded d20 table. Rolls 1-10 Minor (flavor), 11-17 Moderate (real),
+// 18-20 Severe (defining). On a flat d20, severe scars come up ~15% of the time.
+// Cut entries (Deafened in One Ear, Shattered Knee, Withered Arm, Burn Scars, Half-Hand,
+// Punctured Lung, Sun-Stricken) live as a GM-only Narrative Scars appendix in the rulebook.
+const PERMANENT_SCARS = [
+  // MINOR (rolls 1-10) — flavor-first, situational impact
+  { name: "Scarred Face", effect: "Memorable. Once per session, GM may have an NPC recognize you who shouldn't." },
+  { name: "Chipped Tooth", effect: "Disadvantage on Persuasion involving a winning smile" },
+  { name: "Crooked Nose", effect: "Disadvantage on Perception (smell)" },
+  { name: "Lost Ear", effect: "Disadvantage on hearing-based Perception (one side gone)" },
+  { name: "Old Burn", effect: "Disadvantage on Persuasion in formal settings; the scar shows" },
+  { name: "Lost Finger", effect: "Pinky or ring finger gone. Disadvantage on Sleight of Hand." },
+  { name: "Wracking Cough", effect: "Stealth disadvantage in dust, smoke, or cold air" },
+  { name: "Broken Voice", effect: "Disadvantage on Performance and verbal Deception" },
+  { name: "Lost Tooth", effect: "Disadvantage on Persuasion involving smiling/presence" },
+  { name: "Phantom Pain", effect: "Once per session, GM may impose disadvantage on any roll" },
+  // MODERATE (rolls 11-17) — real and lasting
+  { name: "Maimed Hand", effect: "Disadvantage on one chosen Might or Agility check type" },
+  { name: "Crushed Ribs", effect: "Max HP −2 permanently" },
+  { name: "Severed Finger", effect: "Index or middle finger gone. Disadvantage on Sleight of Hand, lockpicking, and weapon attacks with that hand" },
+  { name: "Old Wound", effect: "Once per long rest, first hit you take deals +1 damage" },
+  { name: "Trembling Hands", effect: "Disadvantage on first attack roll of each combat" },
+  { name: "Brittle Bones", effect: "Take +1 damage from all bludgeoning attacks" },
+  { name: "Slow Healer", effect: "Recovery die downgrades one step (d12→d10, etc.)" },
+  // SEVERE (rolls 18-20) — defining losses
+  { name: "Lost an Eye", effect: "Disadvantage on ranged attacks beyond 30ft and on sight-based Perception. Depth perception gone." },
+  { name: "Severed Hand", effect: "That arm cannot wield a weapon, shield, or two-handed implement. Pick primary or off-hand. Magical replacements possible — find a hook." },
+  { name: "Crippled Leg", effect: "Speed halved permanently. The leg never truly returned. You walk with a cane, a peg, or a heavy limp." },
+];
+
+// Afflictions — mental wounds from failed Madness checks (the mind's wound track)
+// v31 new. 6 Afflictions → 7th = LOST (character retired). See rulebook §11.6.
+// Names are placeholders the user will rename later.
+const AFFLICTIONS_TABLE = [
+  { name: "Paranoia", effect: "Disadvantage on Insight. You never quite trust the right people." },
+  { name: "The Whispers", effect: "Disadvantage on Stealth in silence — the voices won't be quiet" },
+  { name: "Compulsion", effect: "GM names a small daily ritual you must perform; skip it = disadvantage on first roll next day" },
+  { name: "Memory Lacuna", effect: "Once per session, GM may declare you don't remember a specific person/place/event" },
+  { name: "Visions", effect: "Once per session, GM describes something only you see — roleplay believing it briefly" },
+  { name: "Trembling Faith", effect: "Disadvantage on Religion & Occultism. The gods feel different now." },
+  { name: "The Watching Eye", effect: "A specific entity (GM's choice) now knows your location at all times" },
+  { name: "Night Terrors", effect: "R&R doesn't fully restore unless someone keeps vigil; without vigil, lose 1 recovered recovery" },
+  { name: "The Wrong Name", effect: "Once per session, GM may have an NPC call you by a name that isn't yours; react as if you know it" },
+  { name: "Brittle Mind", effect: "Disadvantage on the first Resolve check of each combat" },
+  { name: "Sees the Dead", effect: "You see ghosts others cannot. Disadvantage on Persuasion with the bereaved." },
+  { name: "The Wound Beneath", effect: "Once per session, GM may declare a Scar's narrative reasserts itself" },
+  { name: "Soul-Tainted", effect: "Sacred damage +1 per die; Unholy heals you for half; holy water burns" },
+  { name: "Mirror Fear", effect: "Disadvantage on Performance and Deception when you can see your own reflection" },
+  { name: "The Hungering", effect: "An unsettling craving; must indulge briefly each session or take −1 to all rolls that day" },
+  { name: "Crooked Sleep", effect: "−1 maximum HP permanently. The mind that does not rest does not heal." },
+  { name: "The Eaten Word", effect: "One word/name/phrase is taken from you. You cannot speak/write/remember it. (GM picks)" },
+  { name: "Cursed by Death", effect: "Disadvantage on future Death Saves. The door has been opened to you." },
+  { name: "The Returning Daze", effect: "Whenever you reach 0 HP, gain the Dazed condition until next Breather" },
+  { name: "Glimpsed Beyond the Veil", effect: "−1 Focus permanently, but advantage on Resolve checks vs fear/charm/madness" },
+];
+
+let deathFailures = [false, false, false, false];
+
+// Scars are kept as an array: { name, effect, source }
+// source = 'Death Save #1' | 'Death Save #2' | 'GM-assigned' | 'Custom'
+state.scars = [];
+
+function renderScars() {
+  const list = document.getElementById('scars-list');
+  if (!list) return;
+  if (!state.scars || state.scars.length === 0) {
+    list.innerHTML = '<div class="scar-empty">No permanent scars yet. Live long enough and that may change.</div>';
+    return;
+  }
+  list.innerHTML = state.scars.map((s, idx) => `
+    <div class="scar-row">
+      <div class="scar-icon">⚔</div>
+      <div class="scar-body">
+        <div class="scar-name">${escapeHTML(s.name)}</div>
+        <div class="scar-effect">${escapeHTML(s.effect)}</div>
+        <div class="scar-source">${escapeHTML(s.source || 'unknown')}</div>
+      </div>
+      <div class="scar-delete" onclick="event.stopPropagation();removeScar(${idx});return false;" title="Remove this scar">×</div>
+    </div>
+  `).join('');
+}
+
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function addScar(scar) {
+  state.scars.push(scar);
+  renderScars();
+}
+
+function removeScar(idx) {
+  const s = state.scars[idx];
+  if (!s) return;
+  if (!confirm(`Remove "${s.name}"?\n\nPermanent Scars are forever. Be sure to check with your GM lest great woes befall you.`)) return;
+  state.scars.splice(idx, 1);
+  renderScars();
+  toast(`Scar removed: ${s.name}`);
+}
+
+function addScarManual() {
+  // Show a quick picker: choose from canon list or enter custom
+  const canonChoices = PERMANENT_SCARS.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
+  const choice = prompt(
+    `Pick a scar by number (1-${PERMANENT_SCARS.length}), or type 'custom' for a custom scar:\n\n${canonChoices}`,
+    'custom'
+  );
+  if (!choice) return;
+
+  if (choice.toLowerCase().trim() === 'custom') {
+    const name = prompt('Custom scar name?');
+    if (!name || !name.trim()) return;
+    const effect = prompt('Effect / mechanical impact?', 'Describe the lasting effect...');
+    if (effect === null) return;
+    addScar({ name: name.trim(), effect: (effect || '').trim(), source: 'GM-assigned' });
+    toast('Scar added.');
+    return;
+  }
+
+  const num = parseInt(choice);
+  if (isNaN(num) || num < 1 || num > PERMANENT_SCARS.length) {
+    toast('Invalid choice.');
+    return;
+  }
+  const picked = PERMANENT_SCARS[num - 1];
+  addScar({ name: picked.name, effect: picked.effect, source: 'GM-assigned' });
+  toast(`Scar added: ${picked.name}`);
+}
+
+// =========================================
+// AFFLICTIONS — the mental wound track (parallels Scars)
+// 6 Afflictions → 7th = LOST (character retired narratively)
+// =========================================
+state.afflictions = [];
+
+function renderAfflictions() {
+  const list = document.getElementById('afflictions-list');
+  if (!list) return;
+  const count = (state.afflictions || []).length;
+  const countDisplay = document.getElementById('affliction-count-display');
+  if (countDisplay) {
+    countDisplay.textContent = `${count} / 6`;
+    if (count >= 6) countDisplay.style.color = 'var(--danger)';
+    else if (count >= 4) countDisplay.style.color = 'var(--flame)';
+    else countDisplay.style.color = 'var(--text-faded)';
+  }
+  const lostIndicator = document.getElementById('lost-indicator');
+  if (lostIndicator) {
+    lostIndicator.style.display = count >= 7 ? 'block' : 'none';
+  }
+  if (!state.afflictions || state.afflictions.length === 0) {
+    list.innerHTML = '<div class="scar-empty">No Afflictions yet. The mind holds.</div>';
+    return;
+  }
+  list.innerHTML = state.afflictions.map((m, idx) => `
+    <div class="scar-row">
+      <div class="scar-icon">🜲</div>
+      <div class="scar-body">
+        <div class="scar-name">${escapeHTML(m.name)}</div>
+        <div class="scar-effect">${escapeHTML(m.effect)}</div>
+        <div class="scar-source">${escapeHTML(m.source || 'unknown')}</div>
+      </div>
+      <div class="scar-delete" onclick="event.stopPropagation();removeAffliction(${idx});return false;" title="Remove this Affliction">×</div>
+    </div>
+  `).join('');
+}
+
+function addAffliction(m) {
+  state.afflictions.push(m);
+  renderAfflictions();
+  if (state.afflictions.length >= 7) {
+    setTimeout(() => {
+      alert('The 7th Affliction. Your character is LOST — removed from play.\n\nThey are not dead. They are not present either. You and the GM may stage a final scene if you wish: a farewell, a monologue, a quiet exit into the night.\n\nThis character may persist in the world as an NPC. They cannot be retrieved by Vigil or by spell.\n\nMake a new character.');
+    }, 100);
+  }
+}
+
+function removeAffliction(idx) {
+  const m = state.afflictions[idx];
+  if (!m) return;
+  if (!confirm(`Remove "${m.name}"?\n\nAfflictions are removed by Sanity Vigil — confirm the trial was completed.`)) return;
+  state.afflictions.splice(idx, 1);
+  renderAfflictions();
+  toast(`Affliction removed: ${m.name}`);
+}
+
+function addAfflictionManual() {
+  const canonChoices = AFFLICTIONS_TABLE.map((m, i) => `${i + 1}. ${m.name}`).join('\n');
+  const choice = prompt(
+    `Pick an Affliction by number (1-${AFFLICTIONS_TABLE.length}), 'roll' for a random one, or 'custom' for a custom Affliction:\n\n${canonChoices}`,
+    'roll'
+  );
+  if (!choice) return;
+
+  const lc = choice.toLowerCase().trim();
+  if (lc === 'custom') {
+    const name = prompt('Custom Affliction name?');
+    if (!name || !name.trim()) return;
+    const effect = prompt('Effect / mechanical impact?', 'Describe the lasting mental wound...');
+    if (effect === null) return;
+    addAffliction({ name: name.trim(), effect: (effect || '').trim(), source: 'GM-assigned' });
+    toast('Affliction added.');
+    return;
+  }
+
+  if (lc === 'roll' || lc === 'random') {
+    const idx = Math.floor(Math.random() * AFFLICTIONS_TABLE.length);
+    const picked = AFFLICTIONS_TABLE[idx];
+    addAffliction({ name: picked.name, effect: picked.effect, source: 'Random (Madness check)' });
+    toast(`Affliction rolled: ${picked.name}`);
+    return;
+  }
+
+  const num = parseInt(choice);
+  if (isNaN(num) || num < 1 || num > AFFLICTIONS_TABLE.length) {
+    toast('Invalid choice.');
+    return;
+  }
+  const picked = AFFLICTIONS_TABLE[num - 1];
+  addAffliction({ name: picked.name, effect: picked.effect, source: 'GM-assigned' });
+  toast(`Affliction added: ${picked.name}`);
+}
+
+function rollMadnessCheck() {
+  // A Madness check is a Resolve check that, on failure, may impose an Affliction.
+  // GM still needs to set a DC. We just trigger the Resolve roll and prompt for the outcome.
+  const madness = (state.afflictions || []).length;
+  const suggestedDC = 14 + madness;  // Greater rung default
+  const dcInput = prompt(
+    'Madness check — what DC?\n\nDC = 10 + rung + your current Madness (' + madness + ' Affliction' + (madness === 1 ? '' : 's') + '):\n  \u25c8 Greater: ' + (14 + madness) + '\n  \u25c9 Dire: ' + (16 + madness) + ' (a failed Dire hex also recoils — second check)\n  \u25c6 Lesser/Overcast: ' + (12 + madness) + '\n\nResolve check: d20 + Resolve (lower of Focus or Presence, + your raised points).',
+    String(suggestedDC)
+  );
+  if (!dcInput) return;
+  const dc = parseInt(dcInput);
+
+  // Trigger the existing rollResolve() — which will display the roll on the dice roller
+  rollResolve();
+
+  // After a short pause, let the player check the result and decide
+  setTimeout(() => {
+    if (lastRollTotal === null) return;
+    const success = lastRollTotal >= dc;
+    if (success) {
+      toast(`Resolve ${lastRollTotal} vs DC ${dc} — held. No Affliction.`);
+    } else {
+      const proceed = confirm(`Resolve ${lastRollTotal} vs DC ${dc} — FAILED.\n\nGain an Affliction? (OK to roll random, Cancel to add manually later.)`);
+      if (proceed) {
+        const idx = Math.floor(Math.random() * AFFLICTIONS_TABLE.length);
+        const picked = AFFLICTIONS_TABLE[idx];
+        addAffliction({ name: picked.name, effect: picked.effect, source: `Madness check (rolled ${lastRollTotal} vs DC ${dc})` });
+        toast(`Affliction gained: ${picked.name}`);
+      }
+    }
+  }, 150);
+}
+
+function toggleDeathFail(idx) {
+  deathFailures[idx] = !deathFailures[idx];
+  updateDeathBubbles();
+}
+
+function updateDeathBubbles() {
+  document.querySelectorAll('.death-bubble').forEach((b, i) => {
+    if (deathFailures[i]) {
+      b.classList.add('filled');
+      if (i === 3) b.style.background = 'var(--danger)';
+    } else {
+      b.classList.remove('filled');
+      if (i === 3) b.style.background = 'transparent';
+    }
+  });
+}
+
+function rollDeathSave() {
+  const r = Math.floor(Math.random() * 20) + 1;
+  
+  // Show in dice roller display
+  document.getElementById('dice-context').textContent = 'DEATH SAVE';
+  const valEl = document.getElementById('dice-value');
+  valEl.textContent = r;
+  valEl.classList.remove('crit', 'fumble');
+  document.getElementById('spillover-result').innerHTML = '';
+  lastRollTotal = null;
+  
+  if (r === 20) {
+    valEl.classList.add('crit');
+    document.getElementById('dice-detail').textContent = 'NATURAL 20 — Spring back to 1 HP!';
+    toast('NATURAL 20! Back to 1 HP!');
+    document.getElementById('hp-current').value = 1;
+    checkDeath();
+    return;
+  }
+  
+  if (r >= 10) {
+    document.getElementById('dice-detail').textContent = `${r} — STABLE at 0 HP (unconscious)`;
+    toast(`${r} — STABLE`);
+    return;
+  }
+  
+  // Failed
+  // Find next unchecked failure slot (0-3)
+  let nextSlot = deathFailures.findIndex(f => !f);
+  if (nextSlot === -1) nextSlot = 3;
+  deathFailures[nextSlot] = true;
+  updateDeathBubbles();
+  
+  if (nextSlot < 3) {
+    // Failures 1, 2, 3 → scar
+    const scarIdx = Math.floor(Math.random() * PERMANENT_SCARS.length);
+    const scar = PERMANENT_SCARS[scarIdx];
+    valEl.classList.add('fumble');
+    document.getElementById('dice-detail').innerHTML = `${r} — FAIL #${nextSlot + 1} • <strong style="color:var(--flame)">PERMANENT SCAR:</strong> ${scar.name}`;
+
+    // Add scar to the dedicated scars list (no longer pollutes Ancestry Notes)
+    addScar({
+      name: scar.name,
+      effect: scar.effect,
+      source: `Death Save Fail #${nextSlot + 1}`
+    });
+
+    toast(`SCAR: ${scar.name}`);
+  } else {
+    // 4th failure — death
+    valEl.classList.add('fumble');
+    document.getElementById('dice-detail').textContent = `${r} — FAIL #4 • ☠ YOU DIE`;
+    toast('☠ DEATH ☠', 4000);
+  }
+}
+
+// =========================================
+// MUSCLE DICE
+// =========================================
+function getMuscleDiceStats(level) {
+  let count, size;
+  if (level >= 10) { count = 8; size = 'd12'; }
+  else if (level >= 7) { count = 7; size = 'd10'; }
+  else if (level >= 4) { count = 6; size = 'd8'; }
+  else { count = 5; size = 'd6'; }
+  return { count, size };
+}
+const RESOURCE_BY_CLASS = {
+  Fighter:'Muscle', Rogue:'Muscle', Barbarian:'Muscle', Ranger:'Muscle', Monk:'Muscle', Pirate:'Muscle',
+  Wizard:'Magick', Cleric:'Magick', Druid:'Magick', Bard:'Magick', Awakened:'Magick', Maleficar:'Magick'
+};
+function getResourceDiceStats(cls, level) {
+  const base = getMuscleDiceStats(level);
+  const res = RESOURCE_BY_CLASS[cls] || 'Muscle';
+  // One unified pool for everyone — martials call it Muscle Dice, casters Magick Dice. No per-class caps.
+  return { count: base.count, size: base.size, label: res };
+}
+function updateMuscleDiceDisplay() {
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const cls = document.getElementById('char-class').value;
+  const stats = getResourceDiceStats(cls, level);
+  const titleEl = document.getElementById('primary-dice-title');
+  if (titleEl) titleEl.textContent = stats.label + ' Dice';
+  document.getElementById('md-display').textContent = state.muscleDice.available + '/' + stats.count;
+  document.getElementById('md-size').textContent = stats.size;
+  state.muscleDice.max = stats.count;
+  if (state.muscleDice.available > stats.count) state.muscleDice.available = stats.count;
+  
+  const bubbles = document.getElementById('md-bubbles');
+  bubbles.innerHTML = '';
+  for (let i = 0; i < stats.count; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble' + (i < state.muscleDice.available ? ' filled' : ' spent');
+    b.onclick = () => {
+      if (i < state.muscleDice.available) {
+        state.muscleDice.available = i;
+      } else {
+        state.muscleDice.available = i + 1;
+      }
+      updateMuscleDiceDisplay();
+    };
+    bubbles.appendChild(b);
+  }
+}
+function rollMuscleDie() {
+  if (state.muscleDice.available <= 0) {
+    toast('No dice left! Take a breather.');
+    return;
+  }
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const size = getMuscleDiceStats(level).size;
+  const sides = parseInt(size.substring(1));
+  const r = Math.floor(Math.random() * sides) + 1;
+  state.muscleDice.available--;
+  
+  // Show result in the main dice roller display
+  const cls = document.getElementById('char-class').value;
+  const labelType = getResourceDiceStats(cls, level).label.toUpperCase() + ' DIE';
+  document.getElementById('dice-context').textContent = `${labelType} (${size})`;
+  const valEl = document.getElementById('dice-value');
+  valEl.textContent = r;
+  valEl.classList.remove('crit', 'fumble');
+  if (r === sides) valEl.classList.add('crit');  // max roll = mini-crit highlight
+  document.getElementById('dice-detail').textContent = `${size}: ${r} • ${state.muscleDice.available} ${labelType.toLowerCase()}${state.muscleDice.available === 1 ? '' : 's'} remaining`;
+  document.getElementById('spillover-result').innerHTML = '';
+  lastRollTotal = null;  // Don't let this affect spillover calcs
+  
+  updateMuscleDiceDisplay();
+}
+function resetMuscleDice() {
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  state.muscleDice.available = getResourceDiceStats(document.getElementById('char-class').value, level).count;
+  updateMuscleDiceDisplay();
+  toast('Breather! Dice refreshed.');
+}
+
+// =========================================
+// BADASSERY DICE (Meta-Currency)
+// =========================================
+function getBadasseryDieSize(level) {
+  if (level >= 10) return 12;
+  if (level >= 7) return 10;
+  if (level >= 4) return 8;
+  return 6;
+}
+
+function updateBadasseryDisplay() {
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const dieSize = getBadasseryDieSize(level);
+  document.getElementById('ba-display').textContent = state.badasseryDice;
+  document.getElementById('ba-size').textContent = 'd' + dieSize;
+  
+  const bubbles = document.getElementById('ba-bubbles');
+  if (!bubbles) return;
+  bubbles.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble' + (i < state.badasseryDice ? ' filled' : ' spent');
+    b.onclick = () => {
+      // Click to manually set the held count
+      if (i < state.badasseryDice) {
+        state.badasseryDice = i;
+      } else {
+        state.badasseryDice = i + 1;
+      }
+      updateBadasseryDisplay();
+    };
+    bubbles.appendChild(b);
+  }
+}
+
+function addSagaDie() {
+  if ((state.sagaDice||0) >= 3) { toast('Already holding 3 Saga dice. Spend one — the table gave them to be used.'); return; }
+  state.sagaDice = (state.sagaDice||0) + 1;
+  updateSagaDisplay();
+  toast('🤝 +1 Saga Die — the table has spoken!');
+}
+function rollSagaDie() {
+  if ((state.sagaDice||0) <= 0) { toast('No Saga Dice held.'); return; }
+  state.sagaDice--;
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const dieSize = getBadasseryDieSize(level);
+  const roll = Math.floor(Math.random() * dieSize) + 1;
+  updateSagaDisplay();
+  toast(`🤝 TEAM-UP! Saga d${dieSize}: ${roll} — add to the TO-HIT; it counts as Spillover even on Cautious/Defensive moves (or to the effect, if non-damage). A 2nd Saga die: +another die, or negate the boss's Inevitable Reaction.`);
+}
+function updateSagaDisplay() {
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const el = document.getElementById('saga-display');
+  if (!el) return;
+  el.textContent = state.sagaDice || 0;
+  document.getElementById('saga-size').textContent = 'd' + getBadasseryDieSize(level);
+  const bubbles = document.getElementById('saga-bubbles');
+  if (!bubbles) return;
+  bubbles.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble' + (i < (state.sagaDice||0) ? ' filled' : ' spent');
+    b.onclick = () => { state.sagaDice = (i < (state.sagaDice||0)) ? i : i + 1; updateSagaDisplay(); };
+    bubbles.appendChild(b);
+  }
+}
+function addBadasseryDie() {
+  if (state.badasseryDice >= 3) {
+    toast('Already at max (3). Spend one or savor your badassery.');
+    return;
+  }
+  state.badasseryDice++;
+  updateBadasseryDisplay();
+  toast('💥 +1 Badassery Die earned!');
+}
+
+function rollBadasseryDie() {
+  if (state.badasseryDice <= 0) {
+    toast('No Badassery Dice to spend.');
+    return;
+  }
+  // Ask how many to spend (1-3, capped by held count)
+  const max = state.badasseryDice;
+  let count = 1;
+  if (max > 1) {
+    const input = prompt(`Spend how many Badassery Dice? (1-${max})`, '1');
+    if (input === null) return;  // cancelled
+    count = Math.max(1, Math.min(max, parseInt(input) || 1));
+  }
+  
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const dieSize = getBadasseryDieSize(level);
+  const rolls = [];
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    const r = Math.floor(Math.random() * dieSize) + 1;
+    rolls.push(r);
+    total += r;
+  }
+  state.badasseryDice -= count;
+  updateBadasseryDisplay();
+  
+  // Show result in dice roller
+  document.getElementById('dice-context').textContent = `💥 BADASSERY (${count}d${dieSize})`;
+  const valEl = document.getElementById('dice-value');
+  valEl.textContent = '+' + total;
+  valEl.classList.remove('crit', 'fumble');
+  if (count === max && max === 3) valEl.classList.add('crit');  // burned it all
+  
+  let detail = `${rolls.join(' + ')} = +${total}`;
+  if (lastRollTotal !== null) {
+    const newTotal = lastRollTotal + total;
+    detail += ` • new total: ${newTotal}`;
+  }
+  detail += ` • ${state.badasseryDice} remaining`;
+  document.getElementById('dice-detail').textContent = detail;
+  
+  // If we have a recent roll and target AC, recompute spillover with the boost
+  if (lastRollTotal !== null) {
+    lastRollTotal += total;
+    recalcSpillover();
+  }
+  
+  toast(`💥 Rolled ${count}d${dieSize}: +${total}`);
+}
+
+// =========================================
+// SPELL SLOTS
+// =========================================
+function updateSpellSlots() {
+  // v104: no prepare step. Shows spell-pick cadence tracker.
+  const cls = document.getElementById('char-class').value;
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const casters = ['Wizard', 'Cleric', 'Bard', 'Druid', 'Awakened', 'Maleficar'];
+  const section = document.getElementById('spells-section');
+  if (!casters.includes(cls)) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const disp = document.getElementById('prepared-spells-display');
+  if (disp) disp.innerHTML = `Cast anything you <strong style="color:var(--accent)">know</strong> — picks at L2/3/4/6/7/9 (${[2,3,4,6,7,9].filter(l=>l<=level).length} by now) + discoveries` +
+    (cls === 'Maleficar' ? `<br><span style="color:var(--danger);font-size:10px;">Black Magic: every ◈/◉ hex = Madness check on cast (DC 10 + rung + current Afflictions: ◈14 / ◉16 + Madness); a failed ◉ recoils (second check).</span>` : '');
+}
+
+// =========================================
+// COMBAT TRIGGERS (martials only)
+// =========================================
+function updateClass() {
+  const cls = document.getElementById('char-class').value;
+  const martials = ['Fighter', 'Rogue', 'Barbarian', 'Ranger', 'Monk', 'Pirate'];
+  document.getElementById('versatile-section').style.display = martials.includes(cls) ? 'block' : 'none';
+  populateBackgroundDropdowns();
+  populateSubclassDropdown();
+  updateSpellSlots();
+  updateMuscleDiceDisplay();
+  updateHPSuggestion();
+  updateMagicTabVisibility();
+}
+
+const SUBCLASSES = {
+  "Fighter": ["Veteran (base)", "Ronin", "Champion"],
+  "Rogue": ["Thief (base)", "Shinobi", "Swashbuckler"],
+  "Barbarian": ["Reaver (base)", "Berserker", "Exile"],
+  "Ranger": ["Warden (base)", "Stalker", "Beastmaster"],
+  "Monk": ["Adept (base)", "Se'diki", "Bo'diki"],
+  "Wizard": ["Magus (base)", "Battle Mage", "Arcanist"],
+  "Cleric": ["Priest (base)", "Friar", "Templar"],
+  "Druid": ["Shaman (base)", "Elementalist", "Shapeshifter"],
+  "Bard": ["Troubadour (base)", "Skald", "Dirgist"],
+  "Maleficar": ["Hexwright (base)", "Diabolist", "Necromancer"],
+  "Pirate": ["Swashbuckler", "Corsair", "Privateer"],
+  "Awakened": ["Knight", "Mage", "Aberrant"]
+};
+
+// =========================================
+// MAGIC TAB VISIBILITY
+// =========================================
+function updateMagicTabVisibility() {
+  const cls = document.getElementById('char-class').value;
+  const casters = ['Wizard', 'Cleric', 'Druid', 'Bard', 'Awakened', 'Maleficar'];
+  const isCaster = casters.includes(cls);
+  const note = document.getElementById('non-caster-note');
+  if (note) note.style.display = isCaster ? 'none' : 'block';
+}
+
+// =========================================
+// ABILITY SCORES MIRROR (Combat tab)
+// =========================================
+function renderCombatScoresMirror() {
+  const grid = document.getElementById('scores-grid-combat');
+  if (!grid) return;
+  const stats = [
+    {key: 'STR', cond: 'Weakened'},
+    {key: 'DEX', cond: 'Sluggish'},
+    {key: 'CON', cond: 'Sickened'},
+    {key: 'INT', cond: 'Confused'},
+    {key: 'WIS', cond: 'Dazed'},
+    {key: 'CHA', cond: 'Shaken'},
+  ];
+  let html = '';
+  stats.forEach(({key, cond}) => {
+    const score = parseInt(document.getElementById('score-' + key).value) || 10;
+    const m = mod(score);
+    const isAffected = state.conditions && state.conditions[key];
+    html += `
+      <div class="ability ${isAffected ? 'has-condition' : ''}" onclick="rollAbility('${key}')" title="Tap to roll d20 + ${statName(key)} modifier">
+        <div class="ability-name">${statName(key)}</div>
+        <div class="ability-mod">${modStr(m)}</div>
+        <div class="ability-score" style="display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;color:var(--accent);min-height:32px;">${score}</div>
+        <div class="ability-condition-name ${isAffected ? 'active' : ''}">${cond}</div>
+      </div>
+    `;
+  });
+  grid.innerHTML = html;
+
+  // Append derived Grit/Resolve below the mirror grid
+  const mirrorSection = document.getElementById('abilities-combat-mirror');
+  if (mirrorSection) {
+    let derivedEl = document.getElementById('grit-resolve-combat-mirror');
+    if (!derivedEl) {
+      derivedEl = document.createElement('div');
+      derivedEl.id = 'grit-resolve-combat-mirror';
+      derivedEl.style.cssText = 'display:flex;gap:8px;margin-top:10px;';
+      mirrorSection.appendChild(derivedEl);
+    }
+    const level = parseInt(document.getElementById('char-level').value) || 1;
+    const tier = (level>=4?1:0) + (level>=7?1:0) + (level>=10?1:0);
+    const mightMod = mod(parseInt(document.getElementById('score-STR').value) || 10);
+    const fortMod  = mod(parseInt(document.getElementById('score-CON').value) || 10);
+    const focusMod = mod(parseInt(document.getElementById('score-WIS').value) || 10);
+    const presMod  = mod(parseInt(document.getElementById('score-CHA').value) || 10);
+    const grit = Math.min(mightMod, fortMod) + tier;
+    const resolve = Math.min(focusMod, presMod) + tier;
+    derivedEl.innerHTML = `
+      <div class="ability" style="flex:1;cursor:pointer;" onclick="rollGrit()" title="lower of Might/Fortitude (+1 at L4/7/10) — vs poison, disease, exhaustion, sustained physical effects">
+        <div class="ability-name">Grit</div>
+        <div class="ability-mod">${modStr(grit)}</div>
+        <div class="ability-condition-name" style="font-size:9px;">min(Mgt,For)${tier?`+${tier}`:''}</div>
+      </div>
+      <div class="ability" style="flex:1;cursor:pointer;" onclick="rollResolve()" title="lower of Focus/Presence (+1 at L4/7/10) — vs fear, charm, madness, compulsion, illusion">
+        <div class="ability-name">Resolve</div>
+        <div class="ability-mod">${modStr(resolve)}</div>
+        <div class="ability-condition-name" style="font-size:9px;">min(Foc,Pre)${tier?`+${tier}`:''}</div>
+      </div>
+    `;
+  }
+}
+
+// Hook into score input changes — update the mirror whenever a score changes
+function setupScoreMirrorSync() {
+  const stats = ['STR','DEX','CON','INT','WIS','CHA'];
+  stats.forEach(stat => {
+    const inp = document.getElementById('score-' + stat);
+    if (inp) {
+      inp.addEventListener('input', renderCombatScoresMirror);
+      inp.addEventListener('change', renderCombatScoresMirror);
+    }
+  });
+}
+
+function populateSubclassDropdown() {
+  const cls = document.getElementById('char-class').value;
+  const sel = document.getElementById('char-subclass');
+  const cur = sel.value;
+  
+  if (!cls) {
+    sel.innerHTML = '<option value="">— Select Class First —</option>';
+    return;
+  }
+  
+  sel.innerHTML = '<option value="">— Choose Subclass (L3+) —</option>';
+  const subs = SUBCLASSES[cls] || [];
+  subs.forEach(sub => {
+    const opt = document.createElement('option');
+    opt.value = sub;
+    opt.textContent = sub;
+    sel.appendChild(opt);
+  });
+  
+  if (cur && subs.includes(cur)) sel.value = cur;
+}
+
+// =========================================
+// LIST ITEMS (Weapons, Moves, Equipment)
+// =========================================
+function makeItem(listId, placeholder, value = '', isWeapon = false) {
+  const list = document.getElementById(listId);
+  const div = document.createElement('div');
+  div.className = 'item';
+  
+  let html = `<input type="text" class="item-name" placeholder="${placeholder}" value="${value}">`;
+  if (isWeapon) {
+    html = `<button class="btn btn-flame" style="padding:4px 8px;font-size:11px;" onclick="rollAttack(this)">⚔</button>` + html;
+  }
+  html += `<button class="item-delete" onclick="this.parentElement.remove()">✕</button>`;
+  
+  div.innerHTML = html;
+  list.appendChild(div);
+}
+
+function makeWeaponItem(weaponName = '', customName = '', damageOverride = '', abilityOverride = '', quality = 'Standard') {
+  const list = document.getElementById('weapons-list');
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.style.flexDirection = 'column';
+  div.style.alignItems = 'stretch';
+  div.style.gap = '4px';
+  
+  // Top row: weapon selector + quality + attack + delete
+  const topRow = document.createElement('div');
+  topRow.style.cssText = 'display:flex;align-items:center;gap:6px;width:100%;';
+  
+  topRow.innerHTML = `
+    <button class="btn btn-flame" style="padding:4px 8px;font-size:11px;" onclick="rollWeaponAttack(this)">⚔</button>
+    <button class="btn weapon-move-toggle" style="padding:4px 6px;font-size:10px;" onclick="toggleWeaponMove(this)" title="Muscle Move: when ON, attacks also spend 1 Muscle Die and roll it for bonus damage">+Move</button>
+    <select class="weapon-select" style="flex:1;background:var(--bg-mid);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-family:inherit;font-size:13px;" onchange="onWeaponSelect(this)">
+      <option value="">— Choose Weapon —</option>
+    </select>
+    <select class="weapon-quality" title="Quality tier" style="background:var(--bg-mid);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:3px;font-family:inherit;font-size:11px;" onchange="onWeaponSelect(this.closest('.item').querySelector('.weapon-select'))">
+      <option value="Low">Low</option>
+      <option value="Standard" selected>Std</option>
+      <option value="Masterwork">M-work (+1)</option>
+      <option value="Legendary">Legend (+2)</option>
+      <option value="Magic">Magic</option>
+    </select>
+    <button class="item-delete" onclick="this.closest('.item').remove()">✕</button>
+  `;
+  
+  div.appendChild(topRow);
+  
+  // Stats row (shown after selection)
+  const statsRow = document.createElement('div');
+  statsRow.className = 'weapon-stats';
+  statsRow.style.cssText = 'font-size:10px;color:var(--text-dim);padding-left:48px;display:none;';
+  div.appendChild(statsRow);
+  
+  // Optional custom name row (collapsed by default)
+  const customRow = document.createElement('div');
+  customRow.style.cssText = 'display:flex;align-items:center;gap:6px;padding-left:48px;';
+  customRow.innerHTML = `
+    <input type="text" class="item-name weapon-custom-name" placeholder="Custom name / magic properties (optional)" value="${customName}" style="font-size:11px;flex:1;">
+  `;
+  div.appendChild(customRow);
+  
+  list.appendChild(div);
+  
+  // Populate the select dropdown
+  const sel = topRow.querySelector('.weapon-select');
+  ['Simple', 'Martial'].forEach(cat => {
+    const group = document.createElement('optgroup');
+    group.label = `── ${cat} Weapons ──`;
+    WEAPONS.filter(w => w.category === cat).forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w.name;
+      opt.textContent = `${w.name} (${w.damage} ${w.ability})`;
+      group.appendChild(opt);
+    });
+    sel.appendChild(group);
+  });
+  
+  // Custom option
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__';
+  customOpt.textContent = '— Custom Weapon —';
+  sel.appendChild(customOpt);
+  
+  // Set quality
+  topRow.querySelector('.weapon-quality').value = quality;
+  
+  if (weaponName) {
+    sel.value = weaponName;
+    onWeaponSelect(sel);
+  }
+  
+  // Apply manual overrides if provided
+  if (damageOverride) div.dataset.damageOverride = damageOverride;
+  if (abilityOverride) div.dataset.abilityOverride = abilityOverride;
+}
+
+// Quality tier damage transformations
+// 1d4 → 1d2 (coin flip: heads=1, tails=2)
+const QUALITY_DIE_DOWNGRADE = { 12: 10, 10: 8, 8: 6, 6: 4, 4: 2 };
+
+function applyQualityToDamage(baseDamage, quality) {
+  if (!baseDamage || baseDamage === '—') return baseDamage;
+  if (quality === 'Standard' || quality === 'Magic') return baseDamage;
+  
+  // Parse damage like "1d8", "2d6", "1d12"
+  const m = baseDamage.match(/^(\d+)d(\d+)$/);
+  if (!m) return baseDamage;
+  const numDice = parseInt(m[1]);
+  const dieSize = parseInt(m[2]);
+  
+  if (quality === 'Low') {
+    const newSize = QUALITY_DIE_DOWNGRADE[dieSize] || dieSize;
+    // Special case: 1d2 is a coin flip
+    if (newSize === 2) {
+      return `${numDice}d2 (coin flip)`;
+    }
+    return `${numDice}d${newSize}`;
+  }
+  
+  if (quality === 'Masterwork') {
+    return `${baseDamage}+1`;
+  }
+  
+  if (quality === 'Legendary') {
+    return `${baseDamage}+2`;
+  }
+  
+  return baseDamage;
+}
+
+function onWeaponSelect(sel) {
+  const item = sel.closest('.item');
+  const statsRow = item.querySelector('.weapon-stats');
+  const value = sel.value;
+  const quality = item.querySelector('.weapon-quality')?.value || 'Standard';
+  
+  if (!value) {
+    statsRow.style.display = 'none';
+    statsRow.textContent = '';
+    return;
+  }
+  
+  if (value === '__custom__') {
+    statsRow.style.display = 'block';
+    if (!statsRow.querySelector('.weapon-dmg')) {
+      statsRow.innerHTML = `
+        <input type="text" class="weapon-dmg" placeholder="1d8" style="width:50px;font-size:11px;background:var(--bg-mid);border:1px solid var(--border);color:var(--text);padding:2px;border-radius:3px;font-family:inherit;">
+        <select class="weapon-abil" style="font-size:11px;background:var(--bg-mid);border:1px solid var(--border);color:var(--text);padding:2px;border-radius:3px;font-family:inherit;">
+          <option value="STR">Might</option><option value="DEX">Agility</option>
+        </select>
+        <input type="text" class="weapon-props" placeholder="properties" style="font-size:11px;background:var(--bg-mid);border:1px solid var(--border);color:var(--text);padding:2px;border-radius:3px;font-family:inherit;width:160px;">
+      `;
+    }
+    return;
+  }
+  
+  const weapon = WEAPONS.find(w => w.name === value);
+  if (!weapon) return;
+  
+  const adjustedDamage = applyQualityToDamage(weapon.damage, quality);
+  const qualityTag = quality === 'Standard' ? '' : 
+                     quality === 'Magic' ? ` <span style="color:var(--accent)">✦ MAGIC</span>` :
+                     ` <span style="color:var(--flame)">[${quality}]</span>`;
+  
+  statsRow.style.display = 'block';
+  statsRow.innerHTML = `<strong style="color:var(--accent)">${adjustedDamage}</strong> ${weapon.ability} — <em>${weapon.properties}</em>${qualityTag}`;
+}
+
+function toggleWeaponMove(btn) {
+  btn.classList.toggle('active');
+}
+
+function rollWeaponAttack(btn) {
+  if (isEncumbered()) {
+    toast('⚖ ENCUMBERED — cannot attack while burdened!');
+    return;
+  }
+  const item = btn.closest('.item');
+  const sel = item.querySelector('.weapon-select');
+  const value = sel.value;
+  const quality = item.querySelector('.weapon-quality')?.value || 'Standard';
+  const moveToggle = item.querySelector('.weapon-move-toggle');
+  const usingMove = moveToggle && moveToggle.classList.contains('active');
+  let name, ability, damage, properties;
+  
+  if (value === '__custom__') {
+    name = item.querySelector('.weapon-custom-name')?.value || 'Custom weapon';
+    ability = item.querySelector('.weapon-abil')?.value || 'STR';
+    damage = item.querySelector('.weapon-dmg')?.value || '1d6';
+    properties = item.querySelector('.weapon-props')?.value || '';
+  } else if (value) {
+    const w = WEAPONS.find(w => w.name === value);
+    if (!w) return;
+    const customName = item.querySelector('.weapon-custom-name')?.value;
+    name = customName || w.name;
+    ability = w.ability;
+    damage = applyQualityToDamage(w.damage, quality);
+    properties = w.properties;
+  } else {
+    toast('Pick a weapon first');
+    return;
+  }
+  
+  // Determine ability mod (for Finesse, use higher of STR/DEX)
+  let abilToUse = ability;
+  if (properties && properties.toLowerCase().includes('finesse')) {
+    const strMod = mod(parseInt(document.getElementById('score-STR').value) || 10);
+    const dexMod = mod(parseInt(document.getElementById('score-DEX').value) || 10);
+    if (dexMod >= strMod) {
+      abilToUse = 'DEX';
+    } else {
+      abilToUse = 'STR';
+    }
+  }
+  
+  const m = mod(parseInt(document.getElementById('score-' + abilToUse).value) || 10);
+  lastRollContext = { type: 'attack', mod: m, stat: abilToUse, damage, weaponName: name };
+  const qualityTag = (quality === 'Standard' || quality === 'Magic') ? '' : ` [${quality}]`;
+  const moveTag = usingMove ? ' +MOVE' : '';
+  document.getElementById('dice-context').textContent = `${name.toUpperCase()}${qualityTag} (${damage} ${abilToUse})${moveTag}`;
+
+  // Roll the d20 attack first
+  rollD20();
+
+  // If Muscle Move toggle is active, also spend + roll a Muscle Die for bonus damage
+  if (usingMove) {
+    rollMuscleMoveBonus(name, damage, abilToUse);
+  }
+}
+
+function rollMuscleMoveBonus(weaponName, damageExpr, abilToUse) {
+  if (state.muscleDice.available <= 0) {
+    // Append a note that no Muscle Die was available — attack still happens
+    const detail = document.getElementById('dice-detail');
+    detail.textContent += ' • +MOVE: no Muscle Dice available!';
+    toast('No Muscle Dice left — attack rolled without bonus');
+    return;
+  }
+  const level = parseInt(document.getElementById('char-level').value) || 1;
+  const size = getMuscleDiceStats(level).size;
+  const sides = parseInt(size.substring(1));
+  const r = Math.floor(Math.random() * sides) + 1;
+  state.muscleDice.available--;
+  updateMuscleDiceDisplay();
+
+  // Append the Muscle Die roll to the existing dice-detail (next to the d20 result)
+  const detail = document.getElementById('dice-detail');
+  detail.innerHTML = detail.textContent + ` • <strong style="color:var(--flame)">+Muscle ${size}: ${r}</strong> — add ${r} to damage`;
+
+  toast(`+Muscle ${size}: ${r} (${state.muscleDice.available} dice remaining)`);
+}
+
+function rollAttack(btn) {
+  const name = btn.parentElement.querySelector('.item-name').value || 'Attack';
+  lastRollContext = { type: 'attack', mod: 0, stat: 'weapon' };
+  document.getElementById('dice-context').textContent = 'ATTACK: ' + name.toUpperCase();
+  const text = name.toLowerCase();
+  let stat = null;
+  if (text.includes('str')) stat = 'STR';
+  else if (text.includes('dex')) stat = 'DEX';
+  if (stat) {
+    const m = mod(parseInt(document.getElementById('score-' + stat).value) || 10);
+    lastRollContext.mod = m;
+    lastRollContext.stat = stat;
+  }
+  rollD20();
+}
+
+function addWeapon() { makeWeaponItem(); }
+function addMove() { makeItem('moves-list', 'Move or spell name & effect'); }
+function addWornItem()   { makeItem('worn-list',   'Item (sword belt, dagger, potion in pocket...)'); }
+function addPackItem()   { makeItem('pack-list',   'Item (rope, rations, bedroll, kit...)'); }
+function addStoredItem() { makeItem('stored-list', 'Item (at home, in vault, with friend...)'); }
+// Legacy alias — preserved so older saved sheets and references still work
+function addEquipment()  { addWornItem(); }
+
+// =========================================
+// SAVE / LOAD
+// =========================================
+function gatherState() {
+  const data = {};
+  const fields = ['char-name','char-level','char-xp','char-ancestry','char-class','char-subclass','char-tradition','char-bg1','char-bg2',
+                  'score-STR','score-DEX','score-CON','score-INT','score-WIS','score-CHA',
+                  'hp-current','hp-max','hp-temp','ac','speed',
+                  'recov-current','recov-max','coin','supplies','class-features','ancestry-traits',
+                  'trigger-name','trigger-when','trigger-effect',
+                  'armor-select','armor-quality','shield-select',
+                  'char-boast','char-burden','char-unique','cantrips-known','prepared-spells','grit-raise','resolve-raise',
+                  'inv-mounts',
+                  'codex-notes','codex-quests','codex-npcs','codex-locations','codex-lore'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) data[f] = el.value;
+  });
+  data.encumbered = document.getElementById('char-encumbered').checked;
+  data.reactionUsed = document.getElementById('reaction-used') ? document.getElementById('reaction-used').checked : false;
+  data.vigilInProgress = document.getElementById('vigil-in-progress') ? document.getElementById('vigil-in-progress').checked : false;
+  data.conditions = state.conditions;
+  data.muscleDice = state.muscleDice;
+  data.spellSlots = state.spellSlots;
+  data.badasseryDice = state.badasseryDice;
+  data.sagaDice = state.sagaDice || 0;
+  data.sagaDice = state.sagaDice || 0;
+  data.deathFailures = deathFailures;
+  data.shatterState = shatterState;
+  // New: skills state
+  data.skillsState = state.skills;
+  data.customSkills = state.customSkills;
+  data.scars = state.scars;
+  data.afflictions = state.afflictions;
+  data.activeTab = state.activeTab;
+  // Gather weapons with full data
+  data.weapons = Array.from(document.querySelectorAll('#weapons-list .item')).map(item => {
+    const sel = item.querySelector('.weapon-select');
+    const custom = item.querySelector('.weapon-custom-name');
+    const quality = item.querySelector('.weapon-quality');
+    const result = { 
+      weapon: sel ? sel.value : '', 
+      customName: custom ? custom.value : '',
+      quality: quality ? quality.value : 'Standard'
+    };
+    // If custom weapon, save the manual entries
+    if (sel && sel.value === '__custom__') {
+      result.customDmg = item.querySelector('.weapon-dmg')?.value || '';
+      result.customAbil = item.querySelector('.weapon-abil')?.value || '';
+      result.customProps = item.querySelector('.weapon-props')?.value || '';
+    }
+    return result;
+  });
+  data.moves = Array.from(document.querySelectorAll('#moves-list .item-name')).map(i => ({name: i.value}));
+  // Inventory v12: three location-keyed item lists
+  data.worn   = Array.from(document.querySelectorAll('#worn-list .item-name'  )).map(i => ({name: i.value}));
+  data.pack   = Array.from(document.querySelectorAll('#pack-list .item-name'  )).map(i => ({name: i.value}));
+  data.stored = Array.from(document.querySelectorAll('#stored-list .item-name')).map(i => ({name: i.value}));
+  return data;
+}
+
+function applyState(data) {
+  // Set class first so background dropdowns populate correctly
+  if (data['char-class']) {
+    document.getElementById('char-class').value = data['char-class'];
+    populateBackgroundDropdowns();
+    populateSubclassDropdown();
+  }
+  
+  Object.keys(data).forEach(key => {
+    const el = document.getElementById(key);
+    if (el && typeof data[key] !== 'object') el.value = data[key];
+  });
+  
+  // Re-populate after all values set to ensure dropdowns reflect class
+  populateBackgroundDropdowns();
+  populateSubclassDropdown();
+  // Re-apply background and subclass values after dropdown rebuild
+  if (data['char-bg1']) document.getElementById('char-bg1').value = data['char-bg1'];
+  if (data['char-bg2']) document.getElementById('char-bg2').value = data['char-bg2'];
+  if (data['char-subclass']) document.getElementById('char-subclass').value = data['char-subclass'];
+  
+  if (data.conditions) {
+    Object.keys(data.conditions).forEach(c => {
+      if (data.conditions[c] && !state.conditions[c]) toggleCondition(c);
+      if (!data.conditions[c] && state.conditions[c]) toggleCondition(c);
+    });
+  }
+  if (data.muscleDice) state.muscleDice = data.muscleDice;
+  if (data.spellSlots) state.spellSlots = data.spellSlots;
+  state.badasseryDice = data.badasseryDice ?? 0;
+  state.sagaDice = data.sagaDice ?? 0;
+  updateTierBox();
+  updateTriggerBanner();
+  updateBadasseryDisplay();
+  updateSagaDisplay();
+  if (data.shatterState) {
+    shatterState.shieldUsed = data.shatterState.shieldUsed || false;
+    shatterState.lastArmor = data['armor-select'] || '';
+  } else {
+    shatterState.shieldUsed = false;
+    shatterState.lastArmor = data['armor-select'] || '';
+  }
+  updateShatterUI();
+  updateAC();
+  if (data.deathFailures) {
+    deathFailures = data.deathFailures;
+    updateDeathBubbles();
+  } else {
+    deathFailures = [false, false, false, false];
+    updateDeathBubbles();
+  }
+  ['weapons-list', 'moves-list', 'worn-list', 'pack-list', 'stored-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  
+  // Restore weapons (handle both old simple-string format and new object format)
+  (data.weapons || []).forEach(w => {
+    if (typeof w === 'string') {
+      // Old format - just a name string
+      makeWeaponItem('__custom__', w);
+      const items = document.querySelectorAll('#weapons-list .item');
+      const last = items[items.length - 1];
+      if (last) {
+        const dmgInput = last.querySelector('.weapon-dmg');
+        if (dmgInput) dmgInput.value = '1d6';
+      }
+    } else if (w.weapon || w.name) {
+      // New format object, or old simple {name} format
+      if (w.weapon) {
+        makeWeaponItem(w.weapon, w.customName || '', '', '', w.quality || 'Standard');
+        if (w.weapon === '__custom__') {
+          const items = document.querySelectorAll('#weapons-list .item');
+          const last = items[items.length - 1];
+          if (last) {
+            if (w.customDmg) { const e = last.querySelector('.weapon-dmg'); if (e) e.value = w.customDmg; }
+            if (w.customAbil) { const e = last.querySelector('.weapon-abil'); if (e) e.value = w.customAbil; }
+            if (w.customProps) { const e = last.querySelector('.weapon-props'); if (e) e.value = w.customProps; }
+          }
+        }
+      } else if (w.name) {
+        // Try to match by name
+        const match = WEAPONS.find(weap => w.name.toLowerCase().includes(weap.name.toLowerCase()));
+        if (match) {
+          makeWeaponItem(match.name, w.name !== match.name ? w.name : '');
+        } else {
+          makeWeaponItem('__custom__', w.name);
+        }
+      }
+    }
+  });
+  
+  (data.moves || []).forEach(m => makeItem('moves-list', 'Move', m.name));
+
+  // Inventory v12: three location-keyed lists. Backward compat:
+  // - Old data.equipment (generic "stuff") → defaults into Worn / Carried
+  // - Old data.invPack (textarea string) → migrated as a single "(migrated from previous version)" item into Pack
+  // - Old data.invStored (textarea string) → same, into Stored
+  if (Array.isArray(data.worn)) {
+    data.worn.forEach(i => makeItem('worn-list', 'Item', i.name));
+  } else if (Array.isArray(data.equipment)) {
+    data.equipment.forEach(i => makeItem('worn-list', 'Item', i.name));
+  }
+  if (Array.isArray(data.pack)) {
+    data.pack.forEach(i => makeItem('pack-list', 'Item', i.name));
+  } else if (typeof data['inv-pack'] === 'string' && data['inv-pack'].trim()) {
+    makeItem('pack-list', 'Item', '(migrated) ' + data['inv-pack'].replace(/\n/g, '; '));
+  }
+  if (Array.isArray(data.stored)) {
+    data.stored.forEach(i => makeItem('stored-list', 'Item', i.name));
+  } else if (typeof data['inv-stored'] === 'string' && data['inv-stored'].trim()) {
+    makeItem('stored-list', 'Item', '(migrated) ' + data['inv-stored'].replace(/\n/g, '; '));
+  }
+  document.getElementById('char-encumbered').checked = !!data.encumbered;
+  if (document.getElementById('reaction-used')) document.getElementById('reaction-used').checked = !!data.reactionUsed;
+  if (document.getElementById('vigil-in-progress')) document.getElementById('vigil-in-progress').checked = !!data.vigilInProgress;
+  updateEncumberedStyle();
+  updateXP();
+  updateMods();
+  updateClass();
+  updateAC();
+
+  // Restore skill state (new format) — fall back to migrating v9 freeform string
+  if (data.skillsState && typeof data.skillsState === 'object') {
+    state.skills = data.skillsState;
+  } else if (typeof data.skills === 'string' && data.skills.trim()) {
+    // v9 backward compatibility: parse comma-separated skill names from freeform field
+    // Try to match against canon names (case-insensitive)
+    const oldSkills = data.skills.split(/[,\n]/).map(s => s.trim()).filter(s => s.length);
+    const newSkillsState = {};
+    oldSkills.forEach(oldName => {
+      const matched = SKILL_CANON.find(canon =>
+        canon.name.toLowerCase().replace(/\s+/g, '') === oldName.toLowerCase().replace(/\s+/g, '') ||
+        canon.name.toLowerCase().includes(oldName.toLowerCase()) ||
+        oldName.toLowerCase().includes(canon.name.toLowerCase())
+      );
+      if (matched) {
+        newSkillsState[matched.name] = { trained: true };
+      }
+    });
+    state.skills = newSkillsState;
+  } else {
+    state.skills = {};
+  }
+  state.customSkills = Array.isArray(data.customSkills) ? data.customSkills : [];
+  state.scars = Array.isArray(data.scars) ? data.scars : [];
+  state.afflictions = Array.isArray(data.afflictions) ? data.afflictions : (Array.isArray(data.maladies) ? data.maladies : []); // v17: legacy "maladies" key fallback for pre-rename saves
+  renderSkills();
+  renderScars();
+  renderAfflictions();
+  renderCombatScoresMirror();
+  updateMagicTabVisibility();
+
+  // Restore active tab (default to Character)
+  const tab = data.activeTab && ['character','combat','inventory','magic','codex'].includes(data.activeTab) ? data.activeTab : 'character';
+  switchTab(tab);
+}
+
+function saveChar() {
+  const name = document.getElementById('char-name').value || 'unnamed';
+  try {
+    localStorage.setItem('bb-current', JSON.stringify(gatherState()));
+    localStorage.setItem('bb-char-' + name, JSON.stringify(gatherState()));
+    toast('💾 Saved: ' + name);
+  } catch(e) {
+    toast('Save failed (no localStorage?)');
+  }
+}
+
+function loadChar() {
+  try {
+    const saved = localStorage.getItem('bb-current');
+    if (!saved) { toast('Nothing saved yet'); return; }
+    applyState(JSON.parse(saved));
+    toast('📂 Loaded last save');
+  } catch(e) {
+    toast('Load failed');
+  }
+}
+
+function newCharacter() {
+  if (!confirm('Start a new character? Unsaved changes will be lost.')) return;
+  resetAll();
+}
+
+function resetAll() {
+  document.querySelectorAll('input').forEach(i => {
+    if (i.type === 'number') i.value = i.id === 'char-level' ? 1 : (i.id.startsWith('score-') ? 10 : (i.id === 'speed' ? 30 : (i.id === 'ac' ? 10 : (i.id.includes('max') || i.id === 'hp-current' || i.id === 'recov-current' ? 0 : 0))));
+    else i.value = '';
+  });
+  document.querySelectorAll('textarea').forEach(t => t.value = '');
+  document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+  ['weapons-list', 'moves-list', 'worn-list', 'pack-list', 'stored-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  Object.keys(state.conditions).forEach(c => {
+    if (state.conditions[c]) toggleCondition(c);
+  });
+  state.muscleDice = { available: 3, max: 3 };
+  state.spellSlots = {};
+  state.escalation = 0;
+  state.badasseryDice = 0;
+  // Reset skill state
+  state.skills = {};
+  state.customSkills = [];
+  state.scars = [];
+  state.afflictions = [];
+  if (typeof renderSkills === 'function') renderSkills();
+  if (typeof renderScars === 'function') renderScars();
+  if (typeof renderAfflictions === 'function') renderAfflictions();
+  // Reset shatter state (was missing — armor damage persisted through sheet reset)
+  shatterState = { shieldUsed: false, lastArmor: '' };
+  if (typeof updateShatterUI === 'function') updateShatterUI();
+  state.sagaDice = 0;
+  updateBadasseryDisplay();
+  updateSagaDisplay();
+  document.getElementById('escalation').textContent = '+0';
+  document.getElementById('target-ac').value = '';
+  document.getElementById('spillover-result').innerHTML = '';
+  lastRollTotal = null;
+  document.getElementById('char-encumbered').checked = false;
+  // Reset per-R&R toggles
+  const vg = document.getElementById('vigil-in-progress');
+  if (vg) vg.checked = false;
+  document.getElementById('char-xp').value = 0;
+  deathFailures = [false, false, false, false];
+  updateDeathBubbles();
+  updateEncumberedStyle();
+  updateXP();
+  updateMods();
+  updateClass();
+  updateAC();
+  if (typeof renderCombatScoresMirror === 'function') renderCombatScoresMirror();
+  if (typeof updateMagicTabVisibility === 'function') updateMagicTabVisibility();
+  if (typeof switchTab === 'function') switchTab('character');
+  toast('🔥 Sheet reset');
+}
+
+function exportJSON() {
+  const data = gatherState();
+  const json = JSON.stringify(data, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    toast('📤 JSON copied to clipboard');
+  }).catch(() => {
+    prompt('Copy this JSON:', json);
+  });
+}
+
+function importJSON() {
+  const json = prompt('Paste character JSON:');
+  if (!json) return;
+  try {
+    applyState(JSON.parse(json));
+    toast('📥 Imported');
+  } catch(e) {
+    toast('Import failed: invalid JSON');
+  }
+}
+
+// =========================================
+// MENUS
+// =========================================
+function showMenu() { document.getElementById('menu-overlay').classList.add('show'); }
+function closeMenu() { document.getElementById('menu-overlay').classList.remove('show'); }
+function showPreGens() {
+  const list = document.getElementById('pregen-list');
+  list.innerHTML = '';
+  Object.keys(preGens).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'menu-btn';
+    const pg = preGens[name];
+    btn.innerHTML = `<strong>${name}</strong><br><span style="font-size:10px;color:var(--text-faded)">${pg['char-ancestry']} ${pg['char-class']} — Level ${pg['char-level']}</span>`;
+    btn.onclick = () => {
+      if (confirm(`Load ${name}? This will replace the current sheet.`)) {
+        applyState(pg);
+        closePreGens();
+        toast(`📜 Loaded ${name}`);
+      }
+    };
+    list.appendChild(btn);
+  });
+  document.getElementById('pregen-overlay').classList.add('show');
+}
+function closePreGens() { document.getElementById('pregen-overlay').classList.remove('show'); }
+
+// =========================================
+// INIT
+// =========================================
+document.getElementById('char-level').addEventListener('change', () => {
+  updateMuscleDiceDisplay();
+  updateSpellSlots();
+  updateXP();
+  updateBadasseryDisplay();
+});
+document.getElementById('char-encumbered').addEventListener('change', updateEncumberedStyle);
+
+updateMods();
+populateBackgroundDropdowns();
+populateArmorDropdown();
+updateClass();
+updateMuscleDiceDisplay();
+updateBadasseryDisplay();
+updateAC();
+updateShatterUI();
+updateXP();
+updateEncumberedStyle();
+renderSkills();
+renderScars();
+renderAfflictions();
+renderCombatScoresMirror();
+setupScoreMirrorSync();
+updateMagicTabVisibility();
+updateTorchIndicator();
+
+// Import a character sent from the Character Forge via URL (#c=...) — takes priority over the autosave
+let _forgeLoaded = false;
+try {
+  const m = (location.hash || '').match(/[#&]c=([^&]+)/);
+  if (m) {
+    const json = decodeURIComponent(escape(atob(decodeURIComponent(m[1]))));
+    applyState(JSON.parse(json));
+    toast('Loaded character from the Forge');
+    history.replaceState(null, '', location.pathname + location.search); // tidy the URL
+    _forgeLoaded = true;
+  }
+} catch(e) { /* bad or incomplete code — fall through to the saved character */ }
+
+// Auto-load last save on startup (unless a Forge character was just imported)
+if (!_forgeLoaded) {
+  try {
+    const saved = localStorage.getItem('bb-current');
+    if (saved) {
+      applyState(JSON.parse(saved));
+      toast('Loaded saved character');
+    }
+  } catch(e) {}
+}
+
+// Auto-save every 30 seconds
+setInterval(() => {
+  try {
+    localStorage.setItem('bb-current', JSON.stringify(gatherState()));
+  } catch(e) {}
+}, 30000);
+updateTierBox();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+</script>
+</body>
+</html>
